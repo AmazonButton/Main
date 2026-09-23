@@ -66,7 +66,7 @@ const char* DEVICE_SECRET = "sec_smart_button_8829_wtr_key_99";
 const char* FIRMWARE_VER  = "4.2.0";
 
 // Địa chỉ Cloud Backend (Cục bộ mạng Wi-Fi máy tính của anh - cổng 5000)
-const char* DEFAULT_CLOUD_URL = "http://192.168.1.129:5000";
+const char* DEFAULT_CLOUD_URL = "http://192.168.1.140:5000";
 String cloudUrl = DEFAULT_CLOUD_URL;
 
 // Bộ nhớ NVS Flash lưu thông số Wi-Fi & Cloud URL
@@ -182,86 +182,82 @@ bool bootstrapCloud() {
 }
 
 // =========================================================================================
-// 🔘 GỬI SỰ KIỆN BẤM NÚT TẠO ĐƠN HÀNG (SINGLE PRESS)
+// 🔘 GỬI SỰ KIỆN BẤM NÚT (SIÊU TỐC - TỰ ĐỘNG DÒ IP MÁY TÍNH - KHÔNG ĐƠ GIẬT)
 // =========================================================================================
 void sendButtonEvent(const char* eventType) {
   if (WiFi.status() != WL_CONNECTED) {
-    blinkLED(6, 60, 60); // Báo lỗi mất mạng
+    Serial.println(F("\n❌ [LỖI] Chưa kết nối Wi-Fi! Đèn LED báo lỗi..."));
+    blinkLED(6, 60, 60);
     return;
   }
 
-  HTTPClient http;
-  String url = cloudUrl + "/api/iot/events";
+  unsigned long startTime = millis();
+  bool success = false;
+  String workingUrl = "";
 
-  WiFiClientSecure *secureClient = nullptr;
-  if (url.startsWith("https://")) {
-    secureClient = new WiFiClientSecure();
-    if (secureClient) {
-      secureClient->setInsecure();
-      http.begin(*secureClient, url);
+  // Danh sách IP thử nghiệm: cloudUrl hiện tại -> IP máy tính Wi-Fi 140 -> 141
+  String urlsToTry[3];
+  urlsToTry[0] = cloudUrl;
+  urlsToTry[1] = "http://192.168.1.140:5000";
+  urlsToTry[2] = "http://192.168.1.141:5000";
+
+  for (int i = 0; i < 3; i++) {
+    String currentBase = urlsToTry[i];
+    if (i > 0 && currentBase == urlsToTry[0]) continue; // Bỏ qua nếu trùng
+
+    String endpoint = currentBase + "/api/event";
+    Serial.printf("\n🚀 [KẾT NỐI] Gửi sự kiện [%s] tới: %s\n", eventType, endpoint.c_str());
+
+    HTTPClient http;
+    http.begin(endpoint);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(2500); // 2.5s timeout cực nhanh (tránh treo ESP32)
+
+    String body = "{\"deviceId\":\"" + String(DEVICE_ID) +
+                  "\",\"eventType\":\"" + String(eventType) +
+                  "\",\"battery\":98,\"rssi\":" + String(WiFi.RSSI()) + "}";
+
+    int httpCode = http.POST(body);
+    unsigned long elapsed = millis() - startTime;
+
+    if (httpCode == 200 || httpCode == 201) {
+      String response = http.getString();
+      Serial.printf("✅ [THÀNH CÔNG] Server phản hồi HTTP %d trong %lums!\n", httpCode, elapsed);
+      Serial.printf("📦 [DỮ LIỆU] %s\n", response.c_str());
+
+      // Nếu IP này khác cloudUrl hiện tại -> Tự động ghi nhớ vĩnh viễn vào NVS Flash!
+      if (cloudUrl != currentBase) {
+        cloudUrl = currentBase;
+        prefs.begin("wifi_cfg", false);
+        prefs.putString("cloud_url", cloudUrl);
+        prefs.end();
+        Serial.printf("💾 [TỰ ĐỘNG LƯU] Đã cập nhật Cloud URL vào NVS Flash: %s\n", cloudUrl.c_str());
+      }
+
+      workingUrl = currentBase;
+      success = true;
+      http.end();
+      break;
     } else {
-      http.begin(url);
+      Serial.printf("⚠️ [KẾT NỐI THẤT BẠI] %s (Mã HTTP: %d sau %lums)\n", endpoint.c_str(), httpCode, elapsed);
+      http.end();
     }
-  } else {
-    http.begin(url);
   }
 
-  http.addHeader("Content-Type", "application/json");
-
-  time_t now = time(nullptr);
-  unsigned long timestamp = (now > 100000000) ? (unsigned long)now : (millis() / 1000 + 1725350000);
-  String timestampStr = String(timestamp);
-  String nonce = "press_" + String(random(100000, 999999));
-  String requestId = "req_" + String(millis()) + "_" + String(random(1000, 9999));
-
-  String body = "{\"eventType\":\"" + String(eventType) +
-                "\",\"requestId\":\"" + requestId +
-                "\",\"battery\":95,\"rssi\":" + String(WiFi.RSSI()) + "}";
-
-  String signPayload = String(DEVICE_ID) + ":" + timestampStr + ":" + nonce + ":" + body;
-  String signature = computeHMAC(signPayload, DEVICE_SECRET);
-
-  http.addHeader("x-device-id", DEVICE_ID);
-  http.addHeader("x-timestamp", timestampStr);
-  http.addHeader("x-nonce", nonce);
-  http.addHeader("x-signature", signature);
-
-  int httpCode = http.POST(body);
-  Serial.print("[EVENT] Gửi sự kiện ");
-  Serial.print(eventType);
-  Serial.print(" tới ");
-  Serial.print(url);
-  Serial.print(" -> HTTP: ");
-  Serial.println(httpCode);
-
-  // Nếu HMAC Gateway bị từ chối hoặc gặp trục trặc, tự động fallback sang Simple Gateway /api/event
-  if (httpCode != 200 && httpCode != 201) {
-    Serial.println(F("[EVENT] Đang tự động kết nối qua cổng Simple Gateway /api/event..."));
-    HTTPClient fallbackHttp;
-    String fallbackUrl = cloudUrl + "/api/event";
-    fallbackHttp.begin(fallbackUrl);
-    fallbackHttp.addHeader("Content-Type", "application/json");
-    String fallbackBody = "{\"deviceId\":\"" + String(DEVICE_ID) + "\",\"eventType\":\"" + String(eventType) + "\",\"battery\":95,\"rssi\":" + String(WiFi.RSSI()) + "}";
-    int fallbackCode = fallbackHttp.POST(fallbackBody);
-    Serial.print("[EVENT] Kết quả Simple Gateway: ");
-    Serial.println(fallbackCode);
-    if (fallbackCode == 200 || fallbackCode == 201) {
-      httpCode = fallbackCode;
-    }
-    fallbackHttp.end();
-  }
-
-  if (httpCode == 200 || httpCode == 201) {
+  if (success) {
     if (strcmp(eventType, "SINGLE_PRESS") == 0 || strcmp(eventType, "WAKEUP") == 0) {
-      blinkLED(3, 100, 100); // 3 chớp ngắn = Đơn hàng thành công
+      Serial.println(F("🟢 [LED XANH] Đơn hàng đã đồng bộ lên Web thành công!"));
+      blinkLED(3, 100, 100);
     } else {
-      blinkLED(2, 400, 200); // 2 chớp dài = Hủy đơn thành công
+      Serial.println(F("🔴 [LED ĐỎ] Đã hủy đơn hàng thành công trên Web!"));
+      blinkLED(2, 400, 200);
     }
   } else {
-    blinkLED(6, 60, 60); // Báo lỗi
+    Serial.println(F("\n❌ [HƯỚNG DẪN KHẮC PHỤC]"));
+    Serial.println(F("  1. Hãy chắc chắn Backend đang chạy tại http://192.168.1.140:5000"));
+    Serial.println(F("  2. Bạn có thể gõ vào Serial: URL:http://192.168.1.140:5000 rồi nhấn Enter"));
+    blinkLED(6, 60, 60);
   }
-  http.end();
-  if (secureClient) delete secureClient;
 }
 
 // =========================================================================================
@@ -520,6 +516,11 @@ const char PORTAL_HTML[] PROGMEM = R"rawliteral(
           </div>
         </div>
 
+        <div class="form-group">
+          <label for="cloud_url">Địa chỉ Máy Chủ Backend (Web Port 5000):</label>
+          <input type="text" id="cloud_url" name="cloud_url" value="http://192.168.1.140:5000" placeholder="http://192.168.1.140:5000" autocomplete="off" autocapitalize="none">
+        </div>
+
         <button type="submit" class="btn-submit">LƯU & KẾT NỐI WI-FI MỚI</button>
       </form>
 
@@ -729,14 +730,30 @@ void handleServerClient() {
       newPass = urlDecode(body.substring(passIdx + 9, endPass));
     }
 
+    String newCloudUrl = "";
+    int cloudIdx = body.indexOf("cloud_url=");
+    if (cloudIdx != -1) {
+      int endCloud = body.indexOf("&", cloudIdx);
+      if (endCloud == -1) endCloud = body.length();
+      newCloudUrl = urlDecode(body.substring(cloudIdx + 10, endCloud));
+      newCloudUrl.trim();
+    }
+
     if (newSsid.length() > 0) {
       prefs.begin("wifi_cfg", false);
       prefs.putString("ssid", newSsid);
       prefs.putString("password", newPass);
+      if (newCloudUrl.length() > 0) {
+        prefs.putString("cloud_url", newCloudUrl);
+        cloudUrl = newCloudUrl;
+      }
       prefs.end();
 
-      Serial.print("\n[WIFI SAVE] Da luu Wi-Fi moi: \"");
+      Serial.print("\n[WIFI SAVE] Da luu Wi-Fi: \"");
       Serial.print(newSsid);
+      if (newCloudUrl.length() > 0) {
+        Serial.printf("\" & Cloud URL: \"%s", newCloudUrl.c_str());
+      }
       Serial.println("\". Dang khoi dong lai de ket noi...");
 
       client.println("HTTP/1.1 200 OK");
@@ -905,13 +922,13 @@ void setup() {
   cloudUrl  = prefs.getString("cloud_url", DEFAULT_CLOUD_URL);
   prefs.end();
 
-  // Tự động đồng bộ nếu trong NVS Flash lưu IP cũ 192.168.1.126
-  if (cloudUrl.indexOf("192.168.1.126") != -1) {
+  // Tự động đồng bộ nếu trong NVS Flash lưu IP cũ
+  if (cloudUrl.indexOf("192.168.1.126") != -1 || cloudUrl.indexOf("192.168.1.129") != -1 || cloudUrl.indexOf("192.168.1.50") != -1) {
     cloudUrl = DEFAULT_CLOUD_URL;
     prefs.begin("wifi_cfg", false);
     prefs.putString("cloud_url", cloudUrl);
     prefs.end();
-    Serial.println(F("[BOOT] Đã tự động cập nhật Cloud URL sang IP mới trong NVS Flash!"));
+    Serial.println(F("[BOOT] Đã tự động cập nhật Cloud URL sang IP máy tính 192.168.1.140:5000 trong NVS Flash!"));
   }
 
   // In mã số thiết bị, PIN 6 số, Cloud URL và ASCII QR Code ra Serial Monitor
@@ -1022,11 +1039,9 @@ void loop() {
     } else {
       if (clickCount == 1) {
         Serial.println(F("\n🔘 [BẤM 1 LẦN] Tạo đơn hàng ngay lập tức (Single Click Order)!"));
-        blinkLED(3, 100, 100);
         sendButtonEvent("SINGLE_PRESS");
       } else if (clickCount >= 2) {
         Serial.println(F("\n🔘🔘 [BẤM 2 LẦN] Hủy đơn hàng trong 60 giây (Double Click Cancel)!"));
-        blinkLED(2, 400, 200);
         sendButtonEvent("DOUBLE_PRESS");
       }
     }

@@ -60,12 +60,12 @@ export const PasswordStrengthMeter: React.FC<{ password: string; showCriteria?: 
   return (
     <div className="space-y-2 mt-2 animate-in fade-in duration-200">
       <div className="flex items-center justify-between text-[11px] font-mono font-semibold">
-        <span className="text-slate-500 dark:text-slate-400">Độ mạnh mật khẩu:</span>
+        <span className="text-slate-500">Độ mạnh mật khẩu:</span>
         <span className={currentLevel.textColor}>{currentLevel.label}</span>
       </div>
 
       {/* Strength Bar */}
-      <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 rounded-full ${currentLevel.color} ${currentLevel.width}`}
         />
@@ -79,14 +79,14 @@ export const PasswordStrengthMeter: React.FC<{ password: string; showCriteria?: 
               key={idx}
               className={`flex items-center gap-1.5 text-[11px] transition-colors ${
                 item.met
-                  ? 'text-emerald-600 dark:text-emerald-400 font-medium'
-                  : 'text-slate-400 dark:text-slate-500'
+                  ? 'text-emerald-600 font-medium'
+                  : 'text-slate-400'
               }`}
             >
               {item.met ? (
                 <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               ) : (
-                <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 shrink-0" />
+                <X className="w-3.5 h-3.5 text-slate-300 shrink-0" />
               )}
               <span>{item.label}</span>
             </div>

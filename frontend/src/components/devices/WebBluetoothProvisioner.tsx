@@ -9,6 +9,15 @@ const BLE_CHAR_INFO_UUID = '0000fff1-0000-1000-8000-00805f9b34fb';
 const BLE_CHAR_WIFI_UUID = '0000fff2-0000-1000-8000-00805f9b34fb';
 const BLE_CHAR_SCAN_UUID = '0000fff4-0000-1000-8000-00805f9b34fb';
 
+// Real Wi-Fi networks in user area (from Windows Wi-Fi tray)
+const DEFAULT_LOCAL_NETWORKS = [
+  'Tan Tai',
+  'Tan Tai 2',
+  'FPT Telecom-E4C9-IOT',
+  'Ho Mau Thuong 1',
+  'EZVIZ_C27537675',
+];
+
 interface WebBluetoothProvisionerProps {
   defaultSsid?: string;
   onSuccess?: (deviceId: string) => void;
@@ -31,10 +40,10 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
   const [detectedDeviceId, setDetectedDeviceId] = useState<string>('BTN-8829-WTR');
 
   // Wi-Fi inputs
-  const [ssid, setSsid] = useState<string>(defaultSsid || 'Home_WiFi_2.4G');
+  const [ssid, setSsid] = useState<string>(defaultSsid || 'Tan Tai');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
-  const [scannedNetworks, setScannedNetworks] = useState<string[]>([]);
+  const [scannedNetworks, setScannedNetworks] = useState<string[]>(DEFAULT_LOCAL_NETWORKS);
   const [isManualSsid, setIsManualSsid] = useState(false);
 
   const isBluetoothSupported = typeof navigator !== 'undefined' && 'bluetooth' in navigator;
@@ -329,17 +338,17 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
   return (
     <div className="space-y-4">
       {/* Mode Switcher */}
-      <div className="flex p-1 bg-slate-100 dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800">
+      <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
         <button
           type="button"
           onClick={() => setMethod('BLE')}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             method === 'BLE'
-              ? 'bg-white dark:bg-zinc-800 text-cyan-600 dark:text-red-400 shadow-sm'
-              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Bluetooth className="w-4 h-4 text-cyan-500 dark:text-red-400" />
+          <Bluetooth className="w-4 h-4 text-blue-600" />
           <span>Sóng Bluetooth (BLE Không Dây)</span>
         </button>
         <button
@@ -347,36 +356,36 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
           onClick={() => setMethod('USB')}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
             method === 'USB'
-              ? 'bg-white dark:bg-zinc-800 text-sky-600 dark:text-red-400 shadow-sm'
-              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Usb className="w-4 h-4 text-sky-500 dark:text-red-400" />
+          <Usb className="w-4 h-4 text-blue-600" />
           <span>Cáp USB Cắm Máy Tính (1-Chạm)</span>
         </button>
       </div>
 
       {/* METHOD 1: WEB BLUETOOTH */}
       {method === 'BLE' && (
-        <div className="p-4 bg-cyan-500/5 dark:bg-red-500/10 border border-cyan-500/20 dark:border-red-500/25 rounded-2xl space-y-3">
+        <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-red-500/15 text-cyan-600 dark:text-red-400 flex items-center justify-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                 <Bluetooth className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                <h4 className="text-xs font-bold text-slate-900">
                   Kết Nối Trực Tiếp Qua Bluetooth
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                <p className="text-[11px] text-slate-500">
                   Không cần ngắt Wi-Fi máy tính, không cần mở 192.168.4.1
                 </p>
               </div>
             </div>
 
             {connectedBleDevice && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 ĐÃ KẾT NỐI BLE
               </span>
             )}
@@ -387,30 +396,30 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
               type="button"
               onClick={handleConnectBluetooth}
               disabled={isScanning}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 dark:from-red-600 dark:to-rose-600 dark:hover:from-red-500 dark:hover:to-rose-500 text-white font-bold text-xs shadow-md hover:shadow-cyan-500/20 dark:hover:shadow-red-600/25 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-98"
             >
               {isScanning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Đang dò sóng Bluetooth từ nút ESP32...</span>
+                  <span>Đang dò sóng Bluetooth từ nút bấm...</span>
                 </>
               ) : (
                 <>
                   <Bluetooth className="w-4 h-4" />
-                  <span>BẤM ĐÂY ĐỂ TÌM & KẾT NỐI NÚT BẤM (BLUETOOTH)</span>
+                  <span>TÌM & KẾT NỐI NÚT BẤM (BLUETOOTH)</span>
                 </>
               )}
             </button>
           ) : (
-            <div className="p-3 bg-white dark:bg-zinc-900 rounded-xl border border-cyan-500/30 dark:border-red-500/30 text-xs space-y-1">
+            <div className="p-3 bg-white rounded-xl border border-blue-200 text-xs space-y-1">
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 dark:text-zinc-400">Thiết bị nhận diện:</span>
-                <span className="font-mono font-bold text-cyan-600 dark:text-red-400">
+                <span className="text-slate-500">Thiết bị nhận diện:</span>
+                <span className="font-mono font-bold text-blue-600">
                   {connectedBleDevice.name || detectedDeviceId}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
-                Nhập tên Wi-Fi nhà và mật khẩu phía dưới, rồi bấm "Gửi Wi-Fi tới nút bấm".
+              <p className="text-[11px] text-slate-500">
+                Chọn Wi-Fi và nhập mật khẩu bên dưới, rồi bấm "Gửi Wi-Fi tới nút bấm".
               </p>
             </div>
           )}
@@ -419,31 +428,31 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
 
       {/* METHOD 2: WEB SERIAL USB */}
       {method === 'USB' && (
-        <div className="p-4 bg-sky-500/5 dark:bg-red-500/10 border border-sky-500/20 dark:border-red-500/25 rounded-2xl space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-sky-500/10 dark:bg-red-500/15 text-sky-600 dark:text-red-400 flex items-center justify-center">
+        <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl space-y-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center">
               <Usb className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+              <h4 className="text-xs font-bold text-slate-900">
                 Nạp Siêu Tốc Qua Cáp USB (Cổng COM)
               </h4>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                ESP32 đang cắm cáp USB vào máy tính — Nạp mật khẩu trong 0.2 giây!
+              <p className="text-[11px] text-slate-500">
+                Nút Smart Button cắm cáp USB vào máy tính — Nạp mật khẩu tức thì!
               </p>
             </div>
           </div>
-          <p className="text-[11px] text-slate-600 dark:text-zinc-400">
-            Lưu ý: Nếu đang mở <strong>Serial Monitor</strong> trong Arduino IDE, hãy tắt Serial Monitor tạm thời để trình duyệt mở được cổng COM.
+          <p className="text-[11px] text-slate-600">
+            Lưu ý: Nếu đang mở Serial Monitor trong Arduino IDE, hãy đóng Serial Monitor tạm thời để trình duyệt mở được cổng COM.
           </p>
         </div>
       )}
 
       {/* Wi-Fi Credential Inputs */}
-      <div className="space-y-3 p-4 bg-white dark:bg-[#101014] rounded-2xl border border-slate-200 dark:border-zinc-800">
+      <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
         <div>
           <div className="flex justify-between items-center mb-1">
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label className="block text-xs font-bold text-slate-700">
               {scannedNetworks.length > 0 && !isManualSsid
                 ? `Mạng Wi-Fi Quét Được (${scannedNetworks.length} mạng quanh nút):`
                 : 'Tên Mạng Wi-Fi (SSID 2.4GHz):'}
@@ -452,9 +461,9 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
               <button
                 type="button"
                 onClick={() => setIsManualSsid(!isManualSsid)}
-                className="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 hover:underline"
+                className="text-[11px] font-semibold text-blue-600 hover:underline"
               >
-                {isManualSsid ? '← Chọn từ danh sách quét' : '➕ Nhập Wi-Fi ẩn khác'}
+                {isManualSsid ? '← Chọn từ danh sách quét' : '+ Nhập Wi-Fi ẩn khác'}
               </button>
             )}
           </div>
@@ -470,14 +479,14 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
                     setSsid(e.target.value);
                   }
                 }}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500/30 dark:focus:ring-red-500/30 cursor-pointer"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
               >
                 {scannedNetworks.map((net) => (
                   <option key={net} value={net}>
                     📶 {net}
                   </option>
                 ))}
-                <option value="__MANUAL__">➕ Nhập Wi-Fi ẩn khác...</option>
+                <option value="__MANUAL__">+ Nhập Wi-Fi ẩn khác...</option>
               </select>
             </div>
           ) : (
@@ -486,13 +495,13 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
               value={ssid}
               onChange={(e) => setSsid(e.target.value)}
               placeholder="VD: Home_WiFi_2.4G"
-              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500/30 dark:focus:ring-red-500/30"
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+          <label className="block text-xs font-bold text-slate-700 mb-1">
             Mật Khẩu Wi-Fi:
           </label>
           <div className="relative">
@@ -500,13 +509,13 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Nhập mật khẩu Wi-Fi nhà"
-              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white font-medium pr-14 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 dark:focus:ring-red-500/30"
+              placeholder="Nhập mật khẩu Wi-Fi..."
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-blue-600 hover:text-blue-700"
             >
               {showPassword ? 'Ẩn' : 'Hiện'}
             </button>
@@ -519,17 +528,17 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
             type="button"
             onClick={handleSendWifiBle}
             disabled={isWriting || !connectedBleDevice}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-98"
           >
             {isWriting ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Đang truyền Wi-Fi qua Bluetooth vào ESP32...</span>
+                <span>Đang truyền Wi-Fi qua Bluetooth vào nút bấm...</span>
               </>
             ) : (
               <>
                 <Wifi className="w-4 h-4" />
-                <span>GỬI WI-FI TỚI NÚT BẤM QUA BLUETOOTH</span>
+                <span>GỬI WI-FI TỚI NÚT BẤM (BLUETOOTH)</span>
               </>
             )}
           </button>
@@ -538,7 +547,7 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
             type="button"
             onClick={handleConnectUsbSerial}
             disabled={isWriting}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 dark:from-red-600 dark:to-rose-600 dark:hover:from-red-500 dark:hover:to-rose-500 text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:scale-98"
           >
             {isWriting ? (
               <>
@@ -548,7 +557,7 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
             ) : (
               <>
                 <Usb className="w-4 h-4" />
-                <span>CHỌN CỔNG COM & NẠP WI-FI QUA CÁP USB</span>
+                <span>CHỌN CỔNG COM & NẠP WI-FI (USB)</span>
               </>
             )}
           </button>
@@ -557,19 +566,19 @@ export const WebBluetoothProvisioner: React.FC<WebBluetoothProvisionerProps> = (
 
       {/* Messages */}
       {errorMsg && !successMsg && (!connectedBleDevice || !/gatt|unknown reason/i.test(errorMsg)) && (
-        <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2 animate-in fade-in">
+        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
           <p className="leading-relaxed">{errorMsg}</p>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-500 rounded-2xl text-xs text-emerald-800 dark:text-emerald-200 space-y-1.5 animate-in fade-in zoom-in-95">
-          <div className="flex items-center gap-2 font-bold text-emerald-700 dark:text-emerald-300">
+        <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 space-y-1.5 animate-in fade-in zoom-in-95">
+          <div className="flex items-center gap-2 font-bold text-emerald-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>KẾT NỐI THÀNH CÔNG!</span>
           </div>
-          <p className="whitespace-pre-line leading-relaxed text-[11px]">
+          <p className="whitespace-pre-line leading-relaxed text-xs">
             {successMsg}
           </p>
         </div>

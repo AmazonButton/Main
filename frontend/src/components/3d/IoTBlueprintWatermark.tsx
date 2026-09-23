@@ -20,7 +20,7 @@ export const IoTBlueprintWatermark: React.FC<IoTBlueprintWatermarkProps> = ({
       }}
     >
       <svg
-        className="w-[1400px] h-[950px] sm:w-[1700px] sm:h-[1100px] text-blue-700 dark:text-red-500 opacity-[0.04] dark:opacity-[0.07] transition-opacity duration-300"
+        className="w-[1400px] h-[950px] sm:w-[1700px] sm:h-[1100px] text-blue-700 opacity-[0.04] transition-opacity duration-300"
         viewBox="0 0 1400 900"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

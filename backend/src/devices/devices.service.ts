@@ -627,7 +627,7 @@ export class DevicesService {
     }
 
     if (!isMatched) {
-      throw new BadRequestException('Mã xác thực ghép nối (Claim / Pairing / QR Code) không chính xác');
+      throw new BadRequestException('Mã xác thực ghép nối (Claim / Pairing PIN) không chính xác');
     }
 
     const storeId = user.storeId || device.storeId;
@@ -706,7 +706,7 @@ export class DevicesService {
    */
   async lookupByCode(code: string) {
     if (!code || !code.trim()) {
-      throw new BadRequestException('Vui lòng nhập mã số hoặc quét mã QR');
+      throw new BadRequestException('Vui lòng nhập mã số thiết bị');
     }
 
     const trimmed = code.trim();
@@ -884,7 +884,7 @@ export class DevicesService {
   async configureByCode(body: any, user: any) {
     const { code, customName, productId, defaultQuantity = 1, location, description } = body;
     if (!code || !code.trim()) {
-      throw new BadRequestException('Mã số thiết bị hoặc mã QR là bắt buộc');
+      throw new BadRequestException('Mã số thiết bị là bắt buộc');
     }
 
     const device = await this.lookupByCode(code);

@@ -101,18 +101,18 @@ export const VerifyEmailPage: React.FC = () => {
       {/* Ambient Lighting Orb */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-blue-600/10 via-cyan-500/10 to-indigo-600/5 blur-[120px] pointer-events-none rounded-full" />
 
-      <div className="w-full max-w-md bg-white/95 dark:bg-[#0B1120]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/50 dark:shadow-black/60 relative z-10 transition-all">
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/50 relative z-10 transition-all">
         {verified ? (
           <div className="text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 shadow-inner">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
               Xác Thực Thành Công!
             </h2>
 
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               Email của bạn đã được xác minh chính xác. Tài khoản hiện đã sẵn sàng để truy cập và quản lý các thiết bị IoT thông minh.
             </p>
 
@@ -133,10 +133,10 @@ export const VerifyEmailPage: React.FC = () => {
             </div>
 
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
                 Xác Thực Địa Chỉ Email
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 {tokenFromUrl
                   ? 'Đang tiến hành kiểm tra và kích hoạt tài khoản của bạn...'
                   : 'Nhập mã token xác thực đã được gửi tới email của bạn'}
@@ -146,7 +146,7 @@ export const VerifyEmailPage: React.FC = () => {
             {loading && (
               <div className="p-8 text-center space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <p className="text-xs text-slate-500 font-medium">
                   Đang đối chiếu dữ liệu xác thực...
                 </p>
               </div>
@@ -155,9 +155,9 @@ export const VerifyEmailPage: React.FC = () => {
             {error && (
               <div
                 role="alert"
-                className="mb-5 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in"
+                className="mb-5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 animate-in fade-in"
               >
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                 <span className="font-medium leading-relaxed">{error}</span>
               </div>
             )}
@@ -169,7 +169,7 @@ export const VerifyEmailPage: React.FC = () => {
                   <div>
                     <label
                       htmlFor="token"
-                      className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                      className="block text-xs font-bold text-slate-700 mb-1"
                     >
                       Mã Token Xác Thực
                     </label>
@@ -180,7 +180,7 @@ export const VerifyEmailPage: React.FC = () => {
                       value={token}
                       onChange={(e) => setToken(e.target.value)}
                       placeholder="Dán chuỗi token xác thực vào đây"
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
                     />
                   </div>
 
@@ -195,13 +195,13 @@ export const VerifyEmailPage: React.FC = () => {
                 </form>
 
                 {/* Resend Section */}
-                <div className="pt-4 border-t border-slate-100 dark:border-white/5 space-y-3">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                     Chưa nhận được mã hoặc token đã hết hạn?
                   </span>
 
                   {resendSuccessMsg && (
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl flex items-center gap-2">
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
                       <span>{resendSuccessMsg}</span>
                     </div>
@@ -216,13 +216,13 @@ export const VerifyEmailPage: React.FC = () => {
                         value={resendEmail}
                         onChange={(e) => setResendEmail(e.target.value)}
                         placeholder="Nhập email của bạn"
-                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={resendLoading || resendCooldown > 0}
-                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold shrink-0 transition-all disabled:opacity-50"
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold shrink-0 transition-all disabled:opacity-50"
                     >
                       {resendLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -238,7 +238,7 @@ export const VerifyEmailPage: React.FC = () => {
                 <div className="text-center pt-2">
                   <Link
                     to="/login"
-                    className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-cyan-400"
+                    className="text-xs font-semibold text-slate-500 hover:text-blue-600"
                   >
                     Quay lại Đăng nhập
                   </Link>

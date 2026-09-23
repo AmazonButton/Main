@@ -171,21 +171,21 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 rounded-3xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white border border-slate-200/80 rounded-3xl shadow-sm">
         <div className="flex items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 shadow-inner">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-500/20 shadow-inner">
             <Layers className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                 Mẫu Cấu Hình Thiết Bị (Device Templates)
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
                 PROFILES
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Chuẩn hóa kịch bản nút bấm, sản phẩm mặc định và triển khai hàng loạt cho 10-100 thiết bị
             </p>
           </div>
@@ -201,7 +201,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
           </button>
           <Link
             to="/store/devices"
-            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
           >
             Quay lại Danh Sách Nút
           </Link>
@@ -210,10 +210,10 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
 
       {/* Templates Grid */}
       {templates.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-[#0F172A] border border-dashed border-slate-200 dark:border-white/10 rounded-3xl">
-          <Layers className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-700 dark:text-slate-300">Chưa có mẫu cấu hình nào</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
+        <div className="p-12 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
+          <Layers className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-700">Chưa có mẫu cấu hình nào</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
             Tạo template mẫu như <strong>Nút Nước Lavie</strong> hoặc <strong>Nút Gas Petrolimex</strong> để áp dụng hàng loạt.
           </p>
           <button
@@ -231,11 +231,11 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
             return (
               <div
                 key={t.id}
-                className="flex flex-col justify-between p-5 bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 hover:border-indigo-500/40 rounded-3xl shadow-sm transition-all"
+                className="flex flex-col justify-between p-5 bg-white border border-slate-200/80 hover:border-indigo-500/40 rounded-3xl shadow-sm transition-all"
               >
                 <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 uppercase">
                       {t.category || 'Nhu yếu phẩm'}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400">
@@ -244,20 +244,20 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                   </div>
 
                   <div className="py-3 space-y-1">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.name}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                    <h3 className="text-base font-bold text-slate-900">{t.name}</h3>
+                    <p className="text-xs text-slate-500 line-clamp-2">
                       {t.description || 'Không có mô tả chi tiết'}
                     </p>
                   </div>
 
                   {/* Product mapping badge */}
-                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200/60 dark:border-white/5 space-y-1.5">
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-400 uppercase">
                       Sản phẩm mặc định
                     </div>
                     {product ? (
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        <p className="text-xs font-bold text-slate-900 truncate">
                           {product.name}
                         </p>
                         <p className="text-[11px] font-mono text-indigo-500 font-semibold mt-0.5">
@@ -270,16 +270,16 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                   </div>
 
                   {/* Actions mapping table */}
-                  <div className="mt-3 p-2.5 rounded-xl bg-slate-50/50 dark:bg-black/20 border border-slate-100 dark:border-white/5 space-y-1 text-[11px] font-mono">
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <div className="mt-3 p-2.5 rounded-xl bg-slate-50/50 border border-slate-100 space-y-1 text-[11px] font-mono">
+                    <div className="flex justify-between text-slate-600">
                       <span className="text-slate-400">Single Click:</span>
                       <span className="font-bold text-emerald-500">{t.singlePressAction}</span>
                     </div>
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <div className="flex justify-between text-slate-600">
                       <span className="text-slate-400">Double Click:</span>
                       <span className="font-bold text-rose-500">{t.doublePressAction}</span>
                     </div>
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <div className="flex justify-between text-slate-600">
                       <span className="text-slate-400">Hủy miễn phí:</span>
                       <span className="font-bold">{t.cancelWindowSeconds}s</span>
                     </div>
@@ -287,18 +287,18 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Buttons */}
-                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => handleOpenEdit(t)}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"
                       title="Chỉnh sửa template"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteTemplate(t.id)}
-                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 text-rose-600"
+                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600"
                       title="Xóa template"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -327,28 +327,28 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
       {/* ========================================================================= */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">
                 {editingTemplate ? 'Chỉnh Sửa Mẫu Cấu Hình' : 'Tạo Mẫu Cấu Hình Thiết Bị Mới'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl text-xs font-semibold">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold">
                 {modalError}
               </div>
             )}
 
             <form onSubmit={handleSaveTemplate} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Tên Mẫu Cấu Hình *
                 </label>
                 <input
@@ -357,19 +357,19 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                   placeholder="VD: WATER BUTTON - Lavie 20L"
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Ngành Hàng / Danh Mục
                   </label>
                   <select
                     value={templateForm.category}
                     onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
                   >
                     <option value="Nước uống">Nước uống</option>
                     <option value="Gas">Gas</option>
@@ -380,7 +380,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Sản Phẩm SKU Gán Mặc Định *
                   </label>
                   <select
@@ -389,7 +389,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                     onChange={(e) =>
                       setTemplateForm({ ...templateForm, defaultProductId: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none max-w-xs truncate"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none max-w-xs truncate"
                   >
                     <option value="">-- Chọn sản phẩm --</option>
                     {products.map((p) => (
@@ -402,7 +402,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-bold text-slate-700 mb-1">
                   Mô Tả Kỹ Thuật
                 </label>
                 <textarea
@@ -410,41 +410,41 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                   placeholder="Mô tả trường hợp sử dụng của profile nút này..."
                   value={templateForm.description}
                   onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Single Click Action
                   </label>
                   <input
                     type="text"
                     disabled
                     value={templateForm.singlePressAction}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/5 text-emerald-500 font-mono font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-emerald-500 font-mono font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Double Click Action
                   </label>
                   <input
                     type="text"
                     disabled
                     value={templateForm.doublePressAction}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/5 text-rose-500 font-mono font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-rose-500 font-mono font-bold"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold"
                 >
                   Hủy
                 </button>
@@ -466,33 +466,33 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
       {/* ========================================================================= */}
       {deployingTemplate && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <Rocket className="w-5 h-5 text-indigo-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900">
                   Triển Khai Mẫu: {deployingTemplate.name}
                 </h3>
               </div>
               <button
                 onClick={() => setDeployingTemplate(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500">
               Áp dụng cài đặt sản phẩm và hành vi của template này tới hàng loạt thiết bị mà không cần nạp lại firmware vi xử lý.
             </p>
 
             {/* Mode selection tabs */}
-            <div className="flex border-b border-slate-200 dark:border-white/10 text-xs font-bold">
+            <div className="flex border-b border-slate-200 text-xs font-bold">
               <button
                 onClick={() => setDeployMode('range')}
                 className={`pb-2 px-4 transition-colors ${
                   deployMode === 'range'
-                    ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    ? 'border-b-2 border-indigo-500 text-indigo-600'
                     : 'text-slate-500'
                 }`}
               >
@@ -502,7 +502,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                 onClick={() => setDeployMode('select')}
                 className={`pb-2 px-4 transition-colors ${
                   deployMode === 'select'
-                    ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    ? 'border-b-2 border-indigo-500 text-indigo-600'
                     : 'text-slate-500'
                 }`}
               >
@@ -513,7 +513,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
             {deployMode === 'range' ? (
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Tiền tố mã thiết bị (Prefix)
                   </label>
                   <input
@@ -521,13 +521,13 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                     placeholder="VD: WATER-"
                     value={rangePrefix}
                     onChange={(e) => setRangePrefix(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                    className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-bold text-slate-700 mb-1">
                       Từ số
                     </label>
                     <input
@@ -535,11 +535,11 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                       min={1}
                       value={rangeStart}
                       onChange={(e) => setRangeStart(e.target.value)}
-                      className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-bold text-slate-700 mb-1">
                       Đến số
                     </label>
                     <input
@@ -547,7 +547,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                       min={1}
                       value={rangeEnd}
                       onChange={(e) => setRangeEnd(e.target.value)}
-                      className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full px-3 py-2 font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -557,11 +557,11 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-xs">
+              <div className="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2 text-xs">
                 {devices.map((d) => (
                   <label
                     key={d.id}
-                    className="flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                    className="flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
                   >
                     <input
                       type="checkbox"
@@ -575,7 +575,7 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
                       }}
                       className="rounded text-indigo-600"
                     />
-                    <span className="font-mono font-bold text-slate-900 dark:text-white">{d.deviceId}</span>
+                    <span className="font-mono font-bold text-slate-900">{d.deviceId}</span>
                     <span className="text-slate-400 truncate">({d.customName || 'Không tên'})</span>
                   </label>
                 ))}
@@ -583,17 +583,17 @@ export const StoreDeviceTemplatesPage: React.FC = () => {
             )}
 
             {deployResult && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 bg-emerald-50 border border-emerald-500/20 text-emerald-600 rounded-xl text-xs font-semibold flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{deployResult.message}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setDeployingTemplate(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"
               >
                 Đóng
               </button>

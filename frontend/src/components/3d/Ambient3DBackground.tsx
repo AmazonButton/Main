@@ -155,7 +155,7 @@ export const Ambient3DBackground: React.FC<{
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none z-0 opacity-85 dark:opacity-75 transition-opacity duration-300"
+      className="fixed inset-0 pointer-events-none z-0 opacity-85 transition-opacity duration-300"
     />
   );
 };

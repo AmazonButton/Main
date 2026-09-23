@@ -37,8 +37,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
-            tooltip: 'Thêm nút mới',
+            icon: const Icon(Icons.bluetooth_searching, color: AppColors.primary),
+            tooltip: 'Ghép nối nút mới',
             onPressed: () {
               Navigator.push(
                 context,
@@ -614,7 +614,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           Text('Chưa có nút bấm nào', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           SizedBox(height: 6),
           Text(
-            'Quét mã QR trên nút bấm vật lý để kết nối vào căn hộ của bạn.',
+            'Bấm nút Ghép Nối để liên kết nút bấm vật lý vào căn hộ của bạn.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),

@@ -24,8 +24,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   // Input states
   final _codeInput = TextEditingController();
-  final _qrInput = TextEditingController();
-  String _activeTab = 'BLE'; // 'BLE' (Ghép nối 5 lần bấm) | 'CODE' | 'QR'
+  String _activeTab = 'BLE'; // 'BLE' (Ghép nối 5 lần bấm) | 'CODE' (Nhập PIN 6 số)
   bool _isLoadingDevice = false;
   String? _errorMessage;
   bool _isBleScanning = true;
@@ -84,7 +83,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   void dispose() {
     _bleScanTimer?.cancel();
     _codeInput.dispose();
-    _qrInput.dispose();
     _wifiPasswordController.dispose();
     super.dispose();
   }
@@ -101,7 +99,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
     try {
       final res = await ApiService().post('/provisioning/session', {
-        'qrPayload': code,
+        'code': code,
+        'deviceId': code,
       });
 
       if (!mounted) return;
@@ -287,11 +286,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Mode Switcher (3 Tabs: BLE 5-Clicks, PIN Code, QR Scan)
+                    // Mode Switcher (2 Tabs: BLE 5-Clicks, PIN Code)
                     Row(
                       children: [
                         Expanded(
-                          flex: 5,
                           child: InkWell(
                             onTap: () {
                               setState(() {
@@ -302,16 +300,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                             },
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _activeTab == 'BLE' ? AppColors.primary : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
                                 child: Text(
-                                  '📡 Bluetooth (5 Lần)',
+                                  '📡 Bluetooth (5 Lần Bấm)',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                     color: _activeTab == 'BLE' ? Colors.white : AppColors.textSecondary,
                                   ),
@@ -320,9 +318,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
-                          flex: 4,
                           child: InkWell(
                             onTap: () => setState(() {
                               _activeTab = 'CODE';
@@ -330,46 +327,18 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                             }),
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _activeTab == 'CODE' ? AppColors.primary : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
                                 child: Text(
-                                  '🔢 Mã PIN',
+                                  '🔢 Mã PIN 6 Số',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                     color: _activeTab == 'CODE' ? Colors.white : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          flex: 3,
-                          child: InkWell(
-                            onTap: () => setState(() {
-                              _activeTab = 'QR';
-                              _errorMessage = null;
-                            }),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _activeTab == 'QR' ? AppColors.primary : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '📷 QR',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: _activeTab == 'QR' ? Colors.white : AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -522,6 +491,39 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                             ],
                           ],
                         ),
+                    if (_activeTab == 'CODE') ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Nhập Mã PIN 6 Số hoặc Mã Thiết Bị:',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _codeInput,
+                              keyboardType: TextInputType.text,
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1),
+                              decoration: InputDecoration(
+                                hintText: 'VD: 882910 hoặc BTN-8829-WTR',
+                                prefixIcon: const Icon(Icons.pin, color: AppColors.primary),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
 
@@ -550,17 +552,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
                     const SizedBox(height: 20),
 
-                    if (_activeTab != 'BLE') ...[
-                      // Primary Button (Chỉ hiện khi nhập tay PIN hoặc QR)
+                    if (_activeTab == 'CODE') ...[
+                      // Primary Button (Chỉ hiện khi nhập tay PIN)
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
                           onPressed: _isLoadingDevice
                               ? null
-                              : () => _lookupAndJumpToWifiSetup(
-                                    _activeTab == 'CODE' ? _codeInput.text : _qrInput.text,
-                                  ),
+                              : () => _lookupAndJumpToWifiSetup(_codeInput.text),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,

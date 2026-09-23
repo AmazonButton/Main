@@ -249,22 +249,22 @@ export const RegisterPage: React.FC = () => {
   if (registrationSuccess) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 telemetry-grid relative">
-        <div className="w-full max-w-lg bg-white/95 dark:bg-[#0B1120]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-full max-w-lg bg-white/95 backdrop-blur-2xl border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 shadow-inner">
             <CheckCircle2 className="w-8 h-8" />
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Đăng Ký Thành Công!
           </h2>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
             Hệ thống đã gửi liên kết xác thực tới hòm thư:{' '}
-            <strong className="text-slate-900 dark:text-white font-mono">{registeredEmail}</strong>.
+            <strong className="text-slate-900 font-mono">{registeredEmail}</strong>.
           </p>
 
           {role === 'STORE_OWNER' ? (
-            <div className="my-5 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-left text-xs text-amber-800 dark:text-amber-300">
+            <div className="my-5 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-left text-xs text-amber-800">
               <div className="flex items-center gap-2 font-bold mb-1 text-xs">
                 <Clock className="w-4 h-4 text-amber-500" />
                 <span>Xét Duyệt Trạm Đại Lý</span>
@@ -275,8 +275,8 @@ export const RegisterPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="my-5 p-4 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl text-left text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
-              <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white mb-2">
+            <div className="my-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-left text-xs space-y-1.5 text-slate-600">
+              <div className="flex items-center gap-2 font-bold text-slate-900 mb-2">
                 <Sparkles className="w-4 h-4 text-blue-500" />
                 <span>Hướng dẫn kích hoạt:</span>
               </div>
@@ -292,8 +292,8 @@ export const RegisterPage: React.FC = () => {
               <div
                 className={`mb-3 p-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 ${
                   resendMsg.type === 'success'
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                    : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
                 }`}
               >
                 <span>{resendMsg.text}</span>
@@ -304,7 +304,7 @@ export const RegisterPage: React.FC = () => {
               type="button"
               disabled={resendCooldown > 0 || resendLoading}
               onClick={handleResendVerification}
-              className="text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:underline disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1.5"
+              className="text-xs font-semibold text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1.5"
             >
               {resendLoading ? (
                 <>
@@ -332,7 +332,7 @@ export const RegisterPage: React.FC = () => {
             </Link>
             <Link
               to="/verify-email"
-              className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-all text-center flex items-center justify-center btn-press"
+              className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all text-center flex items-center justify-center btn-press"
             >
               <span>Nhập Mã Xác Nhận</span>
             </Link>
@@ -348,7 +348,7 @@ export const RegisterPage: React.FC = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[450px] bg-gradient-to-tr from-blue-600/10 via-cyan-500/10 to-indigo-600/5 blur-[120px] pointer-events-none rounded-full" />
 
       {/* 2-Column Luxury SaaS Container matching LoginPage */}
-      <div className="w-full max-w-5xl bg-white/90 dark:bg-[#0B1120]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/60 overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative z-10 transition-all">
+      <div className="w-full max-w-5xl bg-white/90 backdrop-blur-2xl border border-slate-200/80 rounded-3xl shadow-2xl shadow-slate-200/50 overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative z-10 transition-all">
         {/* Left Branding & Value Props Panel (Desktop/Tablet) */}
         <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 via-[#0B1426] to-[#080D1A] p-8 sm:p-10 text-white flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-white/10 relative overflow-hidden">
           <div className="absolute -right-12 -top-12 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -421,30 +421,30 @@ export const RegisterPage: React.FC = () => {
           <div className="max-w-lg w-full mx-auto space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-600 flex items-center justify-center">
                   <Radio className="w-4 h-4" />
                 </div>
-                <span className="font-mono text-xs font-bold tracking-wider text-blue-600 dark:text-cyan-400 uppercase">
+                <span className="font-mono text-xs font-bold tracking-wider text-blue-600 uppercase">
                   Đăng Ký Tài Khoản
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Tạo Hồ Sơ Mới
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 Lựa chọn vai trò để thiết lập tài khoản và kết nối thiết bị
               </p>
             </div>
 
             {/* Role Tab Toggle - Synchronized Colors */}
-            <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-white/5">
+            <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80">
               <button
                 type="button"
                 onClick={() => setRole('STORE_OWNER')}
                 className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${
                   role === 'STORE_OWNER'
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Store className="w-4 h-4" />
@@ -456,7 +456,7 @@ export const RegisterPage: React.FC = () => {
                 className={`py-2.5 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${
                   role === 'CUSTOMER'
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <User className="w-4 h-4" />
@@ -468,9 +468,9 @@ export const RegisterPage: React.FC = () => {
             {error && (
               <div
                 role="alert"
-                className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in"
+                className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 animate-in fade-in"
               >
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                 <span className="font-medium leading-relaxed">{error}</span>
               </div>
             )}
@@ -478,7 +478,7 @@ export const RegisterPage: React.FC = () => {
             <form onSubmit={handleRegister} className="space-y-3.5" noValidate>
               {role === 'STORE_OWNER' && (
                 <div className="animate-in fade-in">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Tên Cửa Hàng / Doanh Nghiệp <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -489,7 +489,7 @@ export const RegisterPage: React.FC = () => {
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
                       placeholder="VD: Đại lý Nước & Gas An Phú"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
                     />
                   </div>
                 </div>
@@ -498,7 +498,7 @@ export const RegisterPage: React.FC = () => {
               {/* Full Name & Username */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Họ và Tên <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -509,7 +509,7 @@ export const RegisterPage: React.FC = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Nguyễn Văn A"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
                     />
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export const RegisterPage: React.FC = () => {
                 {/* Username with Realtime Check */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="block text-xs font-bold text-slate-700">
                       Tên Đăng Nhập <span className="text-rose-500">*</span>
                     </label>
                     {isCheckingUsername && (
@@ -534,12 +534,12 @@ export const RegisterPage: React.FC = () => {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="nguyenvana"
-                      className={`w-full px-3.5 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-4 transition-all ${
+                      className={`w-full px-3.5 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 text-slate-900 font-mono focus:outline-none focus:ring-4 transition-all ${
                         usernameStatus
                           ? usernameStatus.available
                             ? 'border-emerald-400 focus:ring-emerald-500/15'
                             : 'border-rose-400 focus:ring-rose-500/15'
-                          : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/15 focus:border-blue-600'
+                          : 'border-slate-200 focus:ring-blue-500/15 focus:border-blue-600'
                       }`}
                     />
                     {usernameStatus && (
@@ -556,8 +556,8 @@ export const RegisterPage: React.FC = () => {
                     <p
                       className={`text-[10px] mt-1 font-medium ${
                         usernameStatus.available
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400'
+                          ? 'text-emerald-600'
+                          : 'text-rose-600'
                       }`}
                     >
                       {usernameStatus.message}
@@ -570,7 +570,7 @@ export const RegisterPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="block text-xs font-bold text-slate-700">
                       Địa Chỉ Email <span className="text-rose-500">*</span>
                     </label>
                     {isCheckingEmail && (
@@ -588,12 +588,12 @@ export const RegisterPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="contact@store.vn"
-                      className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-4 transition-all ${
+                      className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 text-slate-900 font-mono focus:outline-none focus:ring-4 transition-all ${
                         emailStatus
                           ? emailStatus.available
                             ? 'border-emerald-400 focus:ring-emerald-500/15'
                             : 'border-rose-400 focus:ring-rose-500/15'
-                          : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/15 focus:border-blue-600'
+                          : 'border-slate-200 focus:ring-blue-500/15 focus:border-blue-600'
                       }`}
                     />
                     {emailStatus && (
@@ -610,8 +610,8 @@ export const RegisterPage: React.FC = () => {
                     <p
                       className={`text-[10px] mt-1 font-medium ${
                         emailStatus.available
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400'
+                          ? 'text-emerald-600'
+                          : 'text-rose-600'
                       }`}
                     >
                       {emailStatus.message}
@@ -620,7 +620,7 @@ export const RegisterPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Số Điện Thoại <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -631,7 +631,7 @@ export const RegisterPage: React.FC = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0908xxxxxx"
-                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 font-mono transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 font-mono transition-all"
                     />
                   </div>
                 </div>
@@ -639,7 +639,7 @@ export const RegisterPage: React.FC = () => {
 
               {/* Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   {role === 'STORE_OWNER' ? 'Địa Chỉ Cửa Hàng / Kho Bãi' : 'Địa Chỉ Giao Hàng Mặc Định'}
                 </label>
                 <div className="relative">
@@ -650,7 +650,7 @@ export const RegisterPage: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Số nhà, Tên đường, Phường/Xã, Quận/Huyện"
-                    className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
+                    className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 transition-all"
                   />
                 </div>
               </div>
@@ -658,7 +658,7 @@ export const RegisterPage: React.FC = () => {
               {/* Password & Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Mật Khẩu <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -669,12 +669,12 @@ export const RegisterPage: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Tối thiểu 8 ký tự"
-                      className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 font-mono transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 font-mono transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -682,7 +682,7 @@ export const RegisterPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Xác Nhận Mật Khẩu <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -693,18 +693,18 @@ export const RegisterPage: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu"
-                      className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:ring-4 font-mono transition-all ${
+                      className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm border rounded-xl bg-slate-50/80 text-slate-900 focus:outline-none focus:ring-4 font-mono transition-all ${
                         confirmPassword
                           ? password === confirmPassword
                             ? 'border-emerald-400 focus:ring-emerald-500/15'
                             : 'border-rose-400 focus:ring-rose-500/15'
-                          : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/15 focus:border-blue-600'
+                          : 'border-slate-200 focus:ring-blue-500/15 focus:border-blue-600'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -713,8 +713,8 @@ export const RegisterPage: React.FC = () => {
                     <p
                       className={`text-[10px] mt-1 font-medium ${
                         password === confirmPassword
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-rose-600 dark:text-rose-400'
+                          ? 'text-emerald-600'
+                          : 'text-rose-600'
                       }`}
                     >
                       {password === confirmPassword
@@ -747,9 +747,9 @@ export const RegisterPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+            <div className="pt-2 text-center text-xs text-slate-500">
               Đã có tài khoản hệ thống?{' '}
-              <Link to="/login" className="text-blue-600 dark:text-cyan-400 font-bold hover:underline">
+              <Link to="/login" className="text-blue-600 font-bold hover:underline">
                 Đăng nhập ngay
               </Link>
             </div>

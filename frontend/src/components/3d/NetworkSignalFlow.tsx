@@ -62,7 +62,7 @@ export const NetworkSignalFlow: React.FC<NetworkSignalFlowProps> = ({
               x2="100"
               y2="1"
               stroke="currentColor"
-              className="text-slate-200 dark:text-red-500/20"
+              className="text-slate-200"
               strokeWidth="1.5"
             />
             {/* Animated dashed signal pulse flowing from Button to Store */}
@@ -73,7 +73,7 @@ export const NetworkSignalFlow: React.FC<NetworkSignalFlowProps> = ({
               y2="1"
               stroke="url(#signalGradient)"
               strokeWidth="2.5"
-              className="animate-signal-flow opacity-80 dark:hidden"
+              className="animate-signal-flow opacity-80"
             />
             <line
               x1="0"
@@ -82,7 +82,7 @@ export const NetworkSignalFlow: React.FC<NetworkSignalFlowProps> = ({
               y2="1"
               stroke="url(#signalGradientCyber)"
               strokeWidth="2.5"
-              className="animate-signal-flow opacity-90 hidden dark:block"
+              className="animate-signal-flow opacity-90 hidden"
             />
             <defs>
               <linearGradient id="signalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -119,30 +119,30 @@ export const NetworkSignalFlow: React.FC<NetworkSignalFlowProps> = ({
                   interactive ? 'cursor-pointer' : ''
                 } ${
                   isCurrent
-                    ? 'bg-white dark:bg-[#141416] border-2 border-blue-600 dark:border-red-500 shadow-xl shadow-blue-500/20 dark:shadow-red-500/30 scale-105 -translate-y-1'
+                    ? 'bg-white border-2 border-blue-600 shadow-xl shadow-blue-500/20 scale-105 -translate-y-1'
                     : isPassed
-                    ? 'bg-white/90 dark:bg-[#121214]/90 border border-blue-200 dark:border-red-500/25'
-                    : 'bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200/50 dark:border-zinc-800 opacity-60 hover:opacity-80'
+                    ? 'bg-white/90 border border-blue-200'
+                    : 'bg-slate-50/70 border border-slate-200/50 opacity-60 hover:opacity-80'
                 }`}
               >
                 {/* Node Orb with Icon */}
                 <div
                   className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
                     isCurrent
-                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-red-600 dark:to-rose-600 text-white shadow-md shadow-blue-500/35 dark:shadow-red-500/40 scale-110'
+                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/35 scale-110'
                       : isPassed
-                      ? 'bg-blue-500/15 dark:bg-red-500/15 text-blue-600 dark:text-red-400'
-                      : 'bg-slate-100 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500'
+                      ? 'bg-blue-500/15 text-blue-600'
+                      : 'bg-slate-100 text-slate-400'
                   }`}
                 >
                   <Icon className={`w-5 h-5 ${isCurrent ? 'animate-pulse' : ''}`} />
                 </div>
 
                 {/* Node Metadata */}
-                <span className="text-xs font-bold text-slate-900 dark:text-white mt-2">
+                <span className="text-xs font-bold text-slate-900 mt-2">
                   {node.label}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
+                <span className="text-[10px] font-mono text-slate-500">
                   {node.sub}
                 </span>
 
@@ -151,13 +151,13 @@ export const NetworkSignalFlow: React.FC<NetworkSignalFlowProps> = ({
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
                       isCurrent
-                        ? 'bg-blue-600 dark:bg-red-500 animate-ping'
+                        ? 'bg-blue-600 animate-ping'
                         : isPassed
-                        ? 'bg-emerald-500 dark:bg-rose-500'
-                        : 'bg-slate-300 dark:bg-zinc-700'
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-300'
                     }`}
                   />
-                  <span className="text-[9px] font-mono uppercase text-slate-400 dark:text-zinc-500 font-semibold">
+                  <span className="text-[9px] font-mono uppercase text-slate-400 font-semibold">
                     {isCurrent ? 'ACTIVE' : isPassed ? 'READY' : 'STANDBY'}
                   </span>
                 </div>
