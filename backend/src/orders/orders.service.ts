@@ -209,6 +209,19 @@ export class OrdersService {
       customerId: customer.id,
     };
 
+    const deviceOnlinePayload = {
+      deviceId: device.deviceId,
+      isOnline: true,
+      lastSeenAt: new Date().toISOString(),
+      batteryLevel: battery,
+      wifiRSSI: rssi,
+      customName: config.customName,
+      status: device.status,
+    };
+    this.eventsGateway.emitDeviceEvent(store.id, customer.id, 'DEVICE_ONLINE', deviceOnlinePayload);
+    this.eventsGateway.emitDeviceEvent(store.id, customer.id, 'DEVICE_HEARTBEAT', deviceOnlinePayload);
+    this.eventsGateway.emitDeviceEvent(store.id, customer.id, 'device:online', deviceOnlinePayload);
+
     this.eventsGateway.emitToStore(store.id, 'ORDER_CREATED', orderPayload);
     this.eventsGateway.emitToCustomer(customer.id, 'ORDER_CREATED', orderPayload);
     if (customer.userId && customer.userId !== customer.id) {
@@ -432,7 +445,7 @@ export class OrdersService {
       device.configuration = newConfig;
     }
 
-    const eventType = body.eventType || 'DOUBLE_PRESS';
+    const eventType = body.eventType || 'SINGLE_PRESS';
     const requestId = `sim_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const orderResult = await this.handleButtonEvent(device, {

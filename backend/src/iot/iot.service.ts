@@ -56,16 +56,38 @@ export class IotService {
     const config = updatedDevice.configuration;
     const householdId = updatedDevice.householdId;
 
+    const deviceOnlinePayload = {
+      deviceId: updatedDevice.deviceId,
+      isOnline: true,
+      batteryLevel: battery,
+      wifiRSSI: rssi,
+      healthScore: health.score,
+      healthStatus: health.status,
+      lastSeenAt: now.toISOString(),
+      customName: config?.customName || updatedDevice.customName,
+      status: updatedDevice.status,
+    };
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      updatedDevice.storeId,
+      updatedDevice.customerId,
+      'DEVICE_ONLINE',
+      deviceOnlinePayload,
+    );
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      updatedDevice.storeId,
+      updatedDevice.customerId,
+      'DEVICE_HEARTBEAT',
+      deviceOnlinePayload,
+    );
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      updatedDevice.storeId,
+      updatedDevice.customerId,
+      'device:online',
+      deviceOnlinePayload,
+    );
+
     // Handle pure heartbeat (periodic keepalive)
     if (eventType === 'HEARTBEAT') {
-      this.ordersService['eventsGateway'].emitGlobal('DEVICE_HEARTBEAT', {
-        deviceId: updatedDevice.deviceId,
-        batteryLevel: battery,
-        wifiRSSI: rssi,
-        healthScore: health.score,
-        healthStatus: health.status,
-        lastSeenAt: now,
-      });
       return {
         success: true,
         code: 'DEVICE_HEARTBEAT_ACK',
@@ -80,13 +102,12 @@ export class IotService {
       customName: config?.customName || updatedDevice.customName || 'Smart Order Button',
       message: 'Nút vật lý đang được bấm...',
     };
-    if (updatedDevice.customerId) {
-      this.ordersService['eventsGateway'].emitToCustomer(updatedDevice.customerId, 'BUTTON_PRESSING', pressingPayload);
-    }
-    if (updatedDevice.storeId) {
-      this.ordersService['eventsGateway'].emitToStore(updatedDevice.storeId, 'BUTTON_PRESSING', pressingPayload);
-    }
-    this.ordersService['eventsGateway'].emitGlobal('BUTTON_PRESSING', pressingPayload);
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      updatedDevice.storeId,
+      updatedDevice.customerId,
+      'BUTTON_PRESSING',
+      pressingPayload,
+    );
 
     // If DOUBLE_PRESS or CANCEL: Check and cancel active pending order within 60s cancellation window
     if (eventType === 'DOUBLE_PRESS' || eventType === 'CANCEL') {
@@ -361,6 +382,7 @@ export class IotService {
       },
     });
 
+    const now = new Date();
     await this.prisma.device.update({
       where: { id: device.id },
       data: {
@@ -368,9 +390,32 @@ export class IotService {
         wifiRSSI: rssi,
         healthScore: health.score,
         healthStatus: health.status,
-        lastSeenAt: new Date(),
+        lastSeenAt: now,
       },
     });
+
+    const telemOnlinePayload = {
+      deviceId: device.deviceId,
+      isOnline: true,
+      batteryLevel: battery,
+      wifiRSSI: rssi,
+      healthScore: health.score,
+      healthStatus: health.status,
+      lastSeenAt: now.toISOString(),
+      status: device.status,
+    };
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      device.storeId,
+      device.customerId,
+      'DEVICE_ONLINE',
+      telemOnlinePayload,
+    );
+    this.ordersService['eventsGateway'].emitDeviceEvent(
+      device.storeId,
+      device.customerId,
+      'DEVICE_HEARTBEAT',
+      telemOnlinePayload,
+    );
 
     return {
       success: true,
