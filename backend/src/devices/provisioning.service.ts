@@ -38,7 +38,7 @@ export class ProvisioningService {
    * Helper to parse QR payload or 6-digit Code / Device ID
    */
   private async resolveDeviceFromInput(inputStr: string): Promise<{ device: any; token: string }> {
-    if (!inputStr) throw new BadRequestException('Mã thiết bị hoặc mã QR rỗng');
+    if (!inputStr) throw new BadRequestException('Mã thiết bị rỗng');
 
     const trimmed = inputStr.trim();
 
@@ -95,7 +95,7 @@ export class ProvisioningService {
   async createSession(body: { qrPayload?: string; deviceId?: string; token?: string; code?: string }) {
     const rawInput = body.code || body.qrPayload || body.deviceId;
     if (!rawInput) {
-      throw new BadRequestException('Vui lòng cung cấp mã số thiết bị hoặc mã QR');
+      throw new BadRequestException('Vui lòng cung cấp mã số thiết bị');
     }
 
     const { device, token } = await this.resolveDeviceFromInput(rawInput);
@@ -191,7 +191,7 @@ export class ProvisioningService {
         where: { id: session.id },
         data: { status: 'EXPIRED' },
       });
-      throw new UnauthorizedException('Phiên ghép nối đã hết hạn sau 10 phút. Vui lòng quét lại mã QR.');
+      throw new UnauthorizedException('Phiên ghép nối đã hết hạn sau 10 phút. Vui lòng kết nối lại.');
     }
 
     const assignedProduct = session.device.product || session.device.configuration?.product;

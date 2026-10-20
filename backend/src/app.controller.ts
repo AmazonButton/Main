@@ -76,19 +76,41 @@ export class AppController {
       return { success: false, message: 'Không tìm thấy thiết bị nút bấm hợp lệ trong hệ thống' };
     }
 
+    const now = new Date();
+    // Cập nhật thông số và trạng thái trực tuyến cho nút bấm
+    const battery = body.battery !== undefined ? body.battery : (device.batteryLevel ?? 98);
+    const rssi = body.rssi !== undefined ? body.rssi : (device.wifiRSSI ?? -55);
+
+    await this.prisma.device.update({
+      where: { id: device.id },
+      data: {
+        lastSeenAt: now,
+        batteryLevel: battery,
+        wifiRSSI: rssi,
+        pressCount: { increment: 1 },
+      },
+    });
+
+    const onlinePayload = {
+      deviceId: device.deviceId,
+      isOnline: true,
+      lastSeenAt: now.toISOString(),
+      batteryLevel: battery,
+      wifiRSSI: rssi,
+      customName: device.configuration?.customName || device.customName,
+      status: device.status,
+    };
+    this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'DEVICE_ONLINE', onlinePayload);
+    this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'DEVICE_HEARTBEAT', onlinePayload);
+    this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'device:online', onlinePayload);
+
     if (event === 'start' || event === 'hold') {
       const pressingPayload = {
         deviceId: device.deviceId,
         customName: device.configuration?.customName || 'Nút Nước Lavie Bếp',
         message: 'Nút đang được nhấn giữ...',
       };
-      if (device.customerId) {
-        this.eventsGateway.emitToCustomer(device.customerId, 'BUTTON_PRESSING', pressingPayload);
-      }
-      if (device.storeId) {
-        this.eventsGateway.emitToStore(device.storeId, 'BUTTON_PRESSING', pressingPayload);
-      }
-      this.eventsGateway.emitGlobal('BUTTON_PRESSING', pressingPayload);
+      this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'BUTTON_PRESSING', pressingPayload);
       return { success: true, message: 'Đã nhận tín hiệu bắt đầu nhấn giữ nút' };
     }
 
@@ -97,13 +119,7 @@ export class AppController {
         deviceId: device.deviceId,
         message: 'Đã thả nút sớm',
       };
-      if (device.customerId) {
-        this.eventsGateway.emitToCustomer(device.customerId, 'BUTTON_RELEASED', releasePayload);
-      }
-      if (device.storeId) {
-        this.eventsGateway.emitToStore(device.storeId, 'BUTTON_RELEASED', releasePayload);
-      }
-      this.eventsGateway.emitGlobal('BUTTON_RELEASED', releasePayload);
+      this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'BUTTON_RELEASED', releasePayload);
       return { success: true, message: 'Người dùng đã thả nút sớm' };
     }
 
@@ -248,12 +264,9 @@ export class AppController {
         lastSeenAt: now.toISOString(),
       };
 
-      if (device.storeId) {
-        this.eventsGateway.emitToStore(device.storeId, 'DEVICE_HEARTBEAT', heartbeatPayload);
-      }
-      if (device.customerId) {
-        this.eventsGateway.emitToCustomer(device.customerId, 'DEVICE_HEARTBEAT', heartbeatPayload);
-      }
+      this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'DEVICE_HEARTBEAT', heartbeatPayload);
+      this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'DEVICE_ONLINE', heartbeatPayload);
+      this.eventsGateway.emitDeviceEvent(device.storeId, device.customerId, 'device:online', heartbeatPayload);
     }
 
     return {

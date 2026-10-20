@@ -127,7 +127,7 @@ export class DevicesController {
   @Roles('STORE_OWNER', 'STORE_MANAGER', 'SUPER_ADMIN')
   async repair(@Param('id') id: string, @Request() req: any) {
     const data = await this.devicesService.repair(id, req.user);
-    return { success: true, message: 'Đã tạo lại mã QR và token ghép nối mới', data };
+    return { success: true, message: 'Đã tạo lại mã PIN và token ghép nối mới', data };
   }
 
   @Post(':id/assign-product')
