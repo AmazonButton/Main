@@ -47,6 +47,6 @@
 // =========================================================================
 // DEFAULT CLOUD BACKEND URL (Overrides from NVS)
 // =========================================================================
-#define DEFAULT_BACKEND_URL     "http://192.168.1.50:5000"
+#define DEFAULT_BACKEND_URL     "http://192.168.1.140:5000"
 
 #endif // CONFIG_H
