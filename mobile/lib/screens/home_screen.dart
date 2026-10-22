@@ -936,14 +936,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Dùng mục Quét QR để ghép nối nút bấm mới.',
+                        'Bấm Ghép Nối để liên kết nút bấm mới.',
                         style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                       ),
                       const SizedBox(height: 16),
                       if (widget.onGoToScan != null)
                         ElevatedButton.icon(
                           onPressed: widget.onGoToScan,
-                          icon: const Icon(Icons.qr_code_scanner, size: 18),
+                          icon: const Icon(Icons.bluetooth_searching, size: 18),
                           label: const Text('Ghép Nối Nút Ngay'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
