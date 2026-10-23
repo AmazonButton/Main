@@ -110,7 +110,7 @@ export const QrCameraScanner: React.FC<QrCameraScannerProps> = ({ onScanSuccess 
         )}
       </div>
 
-      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center font-medium">
+      <p className="text-[11px] text-slate-500 mt-2 text-center font-medium">
         Hướng camera về phía mã QR trên màn hình thiết bị hoặc vỏ hộp
       </p>
     </div>
