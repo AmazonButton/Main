@@ -19,46 +19,40 @@ export const SmartButtonLightField: React.FC<SmartButtonLightFieldProps> = ({
     lg: 'w-96 h-96 sm:w-[440px] sm:h-[440px]',
   }[size];
 
-  // Colors and glow intensity tailored strictly to section 36.4 & 36.14 (soft, diffused, subtle)
+  // Colors and glow intensity tailored strictly to section 12 & 19 (soft, diffused, subtle daylight glow)
   const config = {
     idle: {
-      colorLight: 'radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(6, 182, 212, 0.12) 45%, transparent 70%)',
-      colorDark: 'radial-gradient(circle, rgba(239, 68, 68, 0.28) 0%, rgba(244, 63, 94, 0.14) 45%, transparent 70%)',
-      opacity: 'opacity-85 dark:opacity-90',
+      color: 'radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, rgba(59, 130, 246, 0.08) 45%, transparent 70%)',
+      opacity: 'opacity-80',
       pulse: true,
       scale: 'scale-100',
     },
     press: {
-      colorLight: 'radial-gradient(circle, rgba(37, 99, 235, 0.40) 0%, rgba(6, 182, 212, 0.22) 50%, transparent 75%)',
-      colorDark: 'radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, rgba(244, 63, 94, 0.25) 50%, transparent 75%)',
-      opacity: 'opacity-95 dark:opacity-95',
+      color: 'radial-gradient(circle, rgba(37, 99, 235, 0.28) 0%, rgba(59, 130, 246, 0.15) 50%, transparent 75%)',
+      opacity: 'opacity-90',
       pulse: false,
       scale: 'scale-105',
     },
     connecting: {
-      colorLight: 'radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, rgba(37, 99, 235, 0.18) 45%, transparent 70%)',
-      colorDark: 'radial-gradient(circle, rgba(244, 63, 94, 0.35) 0%, rgba(239, 68, 68, 0.22) 45%, transparent 70%)',
-      opacity: 'opacity-90',
+      color: 'radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(37, 99, 235, 0.12) 45%, transparent 70%)',
+      opacity: 'opacity-85',
       pulse: true,
       scale: 'scale-102',
     },
     success: {
-      colorLight: 'radial-gradient(circle, rgba(16, 185, 129, 0.30) 0%, rgba(6, 182, 212, 0.12) 50%, transparent 75%)',
-      colorDark: 'radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(234, 179, 8, 0.15) 50%, transparent 75%)',
-      opacity: 'opacity-90',
+      color: 'radial-gradient(circle, rgba(16, 185, 129, 0.20) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 75%)',
+      opacity: 'opacity-85',
       pulse: false,
       scale: 'scale-108',
     },
     error: {
-      colorLight: 'radial-gradient(circle, rgba(239, 68, 68, 0.28) 0%, rgba(185, 28, 28, 0.10) 45%, transparent 70%)',
-      colorDark: 'radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, rgba(185, 28, 28, 0.15) 45%, transparent 70%)',
-      opacity: 'opacity-85',
+      color: 'radial-gradient(circle, rgba(239, 68, 68, 0.18) 0%, transparent 65%)',
+      opacity: 'opacity-80',
       pulse: true,
       scale: 'scale-100',
     },
     offline: {
-      colorLight: 'radial-gradient(circle, rgba(148, 163, 184, 0.05) 0%, transparent 50%)',
-      colorDark: 'radial-gradient(circle, rgba(148, 163, 184, 0.05) 0%, transparent 50%)',
+      color: 'radial-gradient(circle, rgba(148, 163, 184, 0.05) 0%, transparent 50%)',
       opacity: 'opacity-20',
       pulse: false,
       scale: 'scale-90',
@@ -72,15 +66,9 @@ export const SmartButtonLightField: React.FC<SmartButtonLightFieldProps> = ({
         config.pulse ? 'animate-pulse-slow' : ''
       } ${className}`}
     >
-      {/* Light Mode Light Field (Blue / Cyan) */}
       <div
-        className="w-full h-full rounded-full dark:hidden transition-all duration-500"
-        style={{ background: config.colorLight }}
-      />
-      {/* Dark Mode Light Field (Gold / Amber) */}
-      <div
-        className="w-full h-full rounded-full hidden dark:block transition-all duration-500"
-        style={{ background: config.colorDark }}
+        className="w-full h-full rounded-full transition-all duration-500"
+        style={{ background: config.color }}
       />
     </div>
   );

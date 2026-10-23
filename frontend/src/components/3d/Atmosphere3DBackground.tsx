@@ -15,32 +15,32 @@ export const Atmosphere3DBackground: React.FC<Atmosphere3DBackgroundProps> = ({
   return (
     <div
       aria-hidden="true"
-      className={`fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-500 bg-[#F8FAFC] dark:bg-[#08080A] ${className}`}
+      className={`fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#F8FAFC] transition-colors ${className}`}
     >
-      {/* 1. Precision Tech Architectural Grid (Subtle Linear/Vercel Engineering Grid with Radial Vignette) */}
-      <div className="absolute inset-0 bg-tech-grid mask-radial-vignette pointer-events-none" />
-
-      {/* 2. Signature Top Horizon Lighting Beam (Vibrant Electric Indigo in Light / Cyber Crimson in Dark) */}
-      <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] rounded-full bg-gradient-to-b from-blue-500/18 via-cyan-500/8 to-transparent dark:from-red-600/22 dark:via-rose-600/8 dark:to-transparent blur-[100px] pointer-events-none" />
-
-      {/* 3. Secondary Ambient Breathing Auras for Rich Dimensional Depth */}
-      {/* Right Side Aura (Warm Cyan / Rose) */}
-      <div className="absolute top-1/4 -right-24 w-[480px] h-[480px] rounded-full bg-cyan-400/8 dark:bg-rose-600/10 blur-[130px] pointer-events-none animate-ambient-breathe" />
-
-      {/* Left Bottom Aura (Deep Royal Blue / Crimson Obsidian) */}
-      <div
-        className="absolute bottom-10 -left-28 w-[520px] h-[520px] rounded-full bg-blue-600/6 dark:bg-red-950/25 blur-[140px] pointer-events-none animate-ambient-breathe"
-        style={{ animationDelay: '-6s' }}
+      {/* 1. Ultra-Subtle Blue Engineering Grid (Opacity extremely low: felt, not noticed) */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.035]"
+        style={{
+          backgroundImage: `linear-gradient(to right, #2563EB 1px, transparent 1px), linear-gradient(to bottom, #2563EB 1px, transparent 1px)`,
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 30%, transparent 90%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 30%, transparent 90%)',
+        }}
       />
 
-      {/* 4. Fine Tactile Micro-Noise Texture (Eliminates OLED/LCD banding, produces luxury matte silk finish) */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.02] dark:opacity-[0.035] pointer-events-none mix-blend-overlay">
-        <filter id="atmosphereNoise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#atmosphereNoise)" />
-      </svg>
+      {/* 2. Soft Light Sky Blue Horizon Warmth (Pure gentle daylight glow at top) */}
+      <div 
+        className="absolute -top-[120px] left-1/2 -translate-x-1/2 w-[900px] h-[360px] rounded-full bg-gradient-to-b from-blue-100/50 via-sky-50/20 to-transparent blur-[90px] pointer-events-none" 
+      />
+
+      {/* 3. Subtle Floating Ambient Dots (Gentle breathing, non-distracting) */}
+      <div 
+        className="absolute top-1/4 -right-16 w-96 h-96 rounded-full bg-blue-50/40 blur-[110px] pointer-events-none animate-ambient-breathe" 
+      />
+      <div 
+        className="absolute bottom-16 -left-20 w-[420px] h-[420px] rounded-full bg-sky-50/35 blur-[120px] pointer-events-none animate-ambient-breathe" 
+        style={{ animationDelay: '-6s' }}
+      />
     </div>
   );
 };
-
