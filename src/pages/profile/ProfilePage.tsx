@@ -198,20 +198,12 @@ export const ProfilePage: React.FC = () => {
     setErrorToast(null);
 
     try {
-      const payload = isStoreOwner
-        ? {
-            fullName: fullName.trim(),
-            phone: storePhone.trim() || phone.trim(),
-            storeName: storeName.trim(),
-            storePhone: storePhone.trim(),
-            storeAddress: deliveryAddress.trim(),
-            deliveryAddress: deliveryAddress.trim(),
-          }
-        : {
-            fullName: fullName.trim(),
-            phone: phone.trim(),
-            deliveryAddress: deliveryAddress.trim(),
-          };
+      // The profile API is intentionally limited to account-level fields.
+      // It rejects unknown store/address fields as a mass-assignment safeguard.
+      const payload = {
+        fullName: fullName.trim(),
+        phone: (isStoreOwner ? storePhone : phone).trim(),
+      };
 
       const res = await api.patch('/auth/profile', payload);
       if (res.data?.success) {
@@ -225,7 +217,10 @@ export const ProfilePage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Save profile error:', err);
-      setErrorToast(err?.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin.');
+      const message = err?.response?.data?.message;
+      setErrorToast(
+        Array.isArray(message) ? message.join(' ') : message || 'Có lỗi xảy ra khi lưu thông tin.',
+      );
       setTimeout(() => setErrorToast(null), 4000);
     } finally {
       setIsSaving(false);

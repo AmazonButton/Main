@@ -1,16 +1,22 @@
 import { io, Socket } from 'socket.io-client';
-import { API_URL, resolveApiUrl } from './api';
+import { API_URL, isTokenExpired, resolveApiUrl } from './api';
 
 let socket: Socket | null = null;
 let subscribedStoreId: string | null = typeof window !== 'undefined' ? localStorage.getItem('smart_order_sub_store') : null;
 let subscribedCustomerId: string | null = typeof window !== 'undefined' ? localStorage.getItem('smart_order_sub_customer') : null;
 
 const getStoredToken = () => {
-  return typeof window !== 'undefined' ? localStorage.getItem('smart_order_token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('smart_order_token') : null;
+  // Never put an expired JWT into the Socket.IO handshake. Render then rejects
+  // the polling request with a 400, which is unrelated to the current page.
+  return token && !isTokenExpired(token) ? token : null;
 };
 
 export function getSocket(): Socket {
-  const targetUrl = typeof resolveApiUrl === 'function' ? resolveApiUrl() : API_URL;
+  const envSocketUrl = (import.meta as any).env?.VITE_SOCKET_URL;
+  const targetUrl = (envSocketUrl && typeof envSocketUrl === 'string' && envSocketUrl.startsWith('http'))
+    ? envSocketUrl.trim().replace(/\/+$/, '')
+    : (typeof resolveApiUrl === 'function' ? resolveApiUrl() : API_URL);
   const token = getStoredToken();
 
   if (!socket) {
@@ -20,14 +26,14 @@ export function getSocket(): Socket {
         const t = getStoredToken();
         cb({ token: t ? `Bearer ${t}` : undefined });
       },
-      query: {
-        token: token ? `Bearer ${token}` : undefined,
-      },
-      transports: ['websocket', 'polling'],
+      // Use direct WebSocket transport to bypass Render proxy sticky-session limitations
+      // and completely eliminate polling 400 Bad Request errors.
+      transports: ['websocket'],
+      upgrade: false,
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
-      timeout: 8000,
+      timeout: 10000,
     });
 
     let lastAuthRole: string | null = null;
@@ -53,9 +59,8 @@ export function getSocket(): Socket {
 
     socket.on('authenticated', (res: any) => {
       const role = res?.user?.role;
-      if (role && role !== lastAuthRole) {
+      if (role) {
         lastAuthRole = role;
-        console.log('⚡ [Socket.io] Authenticated as:', role);
       }
       resubscribe();
     });
@@ -85,24 +90,24 @@ export function getSocket(): Socket {
       });
     }
   } else {
-    // If token exists and socket auth is missing, update auth
-    if (token && socket.auth && (socket.auth as any).token !== `Bearer ${token}`) {
-      socket.auth = { token: `Bearer ${token}` };
-    }
+    socket.auth = { token: token ? `Bearer ${token}` : undefined };
   }
   return socket;
 }
 
 export function updateSocketAuth(token?: string | null) {
   const currentToken = token !== undefined ? token : getStoredToken();
+  const validToken = currentToken && !isTokenExpired(currentToken) ? currentToken : null;
   const s = getSocket();
   if (s) {
-    (s as any).auth = { token: currentToken ? `Bearer ${currentToken}` : undefined };
+    (s as any).auth = { token: validToken ? `Bearer ${validToken}` : undefined };
     if (s.connected) {
-      if (currentToken) {
-        s.emit('authenticate', { token: currentToken });
+      if (validToken) {
+        s.emit('authenticate', { token: validToken });
+      } else {
+        s.disconnect();
       }
-    } else {
+    } else if (validToken) {
       s.connect();
     }
   }
@@ -141,5 +146,16 @@ export function subscribeToCustomer(customerId: string) {
   }
   if (s && !s.connected) {
     s.connect();
+  }
+}
+
+export function clearSocketSubscriptions() {
+  subscribedStoreId = null;
+  subscribedCustomerId = null;
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('smart_order_sub_store');
+      localStorage.removeItem('smart_order_sub_customer');
+    } catch (_) {}
   }
 }

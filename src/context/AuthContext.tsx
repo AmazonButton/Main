@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
-import { api } from '../services/api';
-import { updateSocketAuth } from '../services/socket';
+import { api, isTokenExpired, getOrRefreshValidToken } from '../services/api';
+import { updateSocketAuth, clearSocketSubscriptions } from '../services/socket';
 
 interface AuthContextType {
   user: User | null;
@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (newToken: string, userData: User, newRefreshToken?: string) => void;
-  logout: () => Promise<void>;
+  logout: () => void | Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -18,7 +18,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
+    const savedToken = localStorage.getItem('smart_order_token');
     const saved = localStorage.getItem('smart_order_user');
+    const refreshToken = localStorage.getItem('smart_order_refresh_token');
+    if (savedToken && isTokenExpired(savedToken) && !refreshToken) {
+      localStorage.removeItem('smart_order_token');
+      localStorage.removeItem('smart_order_user');
+      return null;
+    }
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -29,35 +36,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem('smart_order_token')
-  );
+  const [token, setToken] = useState<string | null>(() => {
+    const savedToken = localStorage.getItem('smart_order_token');
+    const refreshToken = localStorage.getItem('smart_order_refresh_token');
+    if (savedToken) {
+      if (isTokenExpired(savedToken)) {
+        if (!refreshToken) {
+          localStorage.removeItem('smart_order_token');
+          return null;
+        }
+        return null;
+      }
+      api.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      return savedToken;
+    }
+    return null;
+  });
+
   const [refreshToken, setRefreshToken] = useState<string | null>(() =>
     localStorage.getItem('smart_order_refresh_token')
   );
-  const [isLoading, setIsLoading] = useState(true);
 
-  const logout = useCallback(async () => {
-    try {
-      const activeRefreshToken = localStorage.getItem('smart_order_refresh_token');
-      if (activeRefreshToken) {
-        await api.post('/auth/logout', { refreshToken: activeRefreshToken }).catch(() => {});
-      }
-    } finally {
-      localStorage.removeItem('smart_order_token');
-      localStorage.removeItem('smart_order_refresh_token');
-      localStorage.removeItem('smart_order_user');
-      setToken(null);
-      setRefreshToken(null);
-      setUser(null);
-      updateSocketAuth(null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const savedToken = localStorage.getItem('smart_order_token');
+    const savedUser = localStorage.getItem('smart_order_user');
+    if (savedToken && savedUser && !isTokenExpired(savedToken)) {
+      return false;
+    }
+    const savedRefreshToken = localStorage.getItem('smart_order_refresh_token');
+    if (savedRefreshToken) {
+      return true;
+    }
+    return false;
+  });
+
+  // Instant optimistic logout: clears storage and state immediately, notifies backend in background
+  const logout = useCallback(() => {
+    const activeToken = localStorage.getItem('smart_order_token');
+    const activeRefreshToken = localStorage.getItem('smart_order_refresh_token');
+
+    // 1. Instantly wipe client credentials & state (0ms UI transition)
+    localStorage.removeItem('smart_order_token');
+    localStorage.removeItem('smart_order_refresh_token');
+    localStorage.removeItem('smart_order_user');
+    delete api.defaults.headers.common['Authorization'];
+    setToken(null);
+    setRefreshToken(null);
+    setUser(null);
+    setIsLoading(false);
+    clearSocketSubscriptions();
+    updateSocketAuth(null);
+
+    // 2. Fire-and-forget background revoke to server without blocking UI
+    if (activeRefreshToken || activeToken) {
+      api
+        .post(
+          '/auth/logout',
+          { refreshToken: activeRefreshToken },
+          {
+            headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {},
+          }
+        )
+        .catch(() => {});
     }
   }, []);
 
   const refreshUser = useCallback(async () => {
     const activeToken = localStorage.getItem('smart_order_token');
-    if (!activeToken) {
+    const activeRefreshToken = localStorage.getItem('smart_order_refresh_token');
+    if (!activeToken && !activeRefreshToken) {
+      setUser(null);
+      setToken(null);
       setIsLoading(false);
+      return;
+    }
+
+    // Proactively verify or refresh the token BEFORE calling /auth/me
+    const validToken = await getOrRefreshValidToken();
+    if (!validToken) {
+      localStorage.removeItem('smart_order_token');
+      localStorage.removeItem('smart_order_refresh_token');
+      localStorage.removeItem('smart_order_user');
+      delete api.defaults.headers.common['Authorization'];
+      setUser(null);
+      setToken(null);
+      setIsLoading(false);
+      clearSocketSubscriptions();
+      updateSocketAuth(null);
       return;
     }
 
@@ -71,10 +136,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(normalizedUser);
         localStorage.setItem('smart_order_user', JSON.stringify(normalizedUser));
+
+        setToken(validToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${validToken}`;
+        updateSocketAuth(validToken);
       }
     } catch (e: any) {
       if (e.response?.status === 401) {
-        await logout();
+        logout();
       }
     } finally {
       setIsLoading(false);
@@ -88,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (newToken: string, userData: User, newRefreshToken?: string) => {
     localStorage.setItem('smart_order_token', newToken);
     setToken(newToken);
+    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
     if (newRefreshToken) {
       localStorage.setItem('smart_order_refresh_token', newRefreshToken);
@@ -100,8 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userData.customerProfileId || (userData as any).customerProfile?.id || null,
     };
 
+    clearSocketSubscriptions();
     localStorage.setItem('smart_order_user', JSON.stringify(normalizedUser));
     setUser(normalizedUser);
+    setIsLoading(false);
     updateSocketAuth(newToken);
   };
 

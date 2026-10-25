@@ -14,12 +14,16 @@ import { StoreDashboard } from './pages/store/StoreDashboard';
 import { StoreDevicesPage } from './pages/store/StoreDevicesPage';
 import { StoreDeviceTemplatesPage } from './pages/store/StoreDeviceTemplatesPage';
 import { StoreProductsPage } from './pages/store/StoreProductsPage';
+import { StoreWalletPage } from './pages/store/StoreWalletPage';
 import { StoreAnalyticsPage } from './pages/store/StoreAnalyticsPage';
 import { CustomerHomePage } from './pages/customer/CustomerHomePage';
+import { CustomerOrdersPage } from './pages/customer/CustomerOrdersPage';
+import { ShopPage } from './pages/customer/ShopPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminSecurityHubPage } from './pages/admin/AdminSecurityHubPage';
 import { QuickSetupPage } from './pages/QuickSetupPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { AdminPayoutsPage, CustomerVerificationPage, DriverShiftPage, StoreFinancePage } from './pages/operations/OperationsPages';
 import { useAuth } from './context/AuthContext';
 import { Atmosphere3DBackground, AtmosphereVariant } from './components/3d/Atmosphere3DBackground';
 
@@ -28,7 +32,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
   children,
   allowedRoles,
 }) => {
-  const { user, isLoading } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -42,7 +46,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
     );
   }
 
-  if (!user) {
+  if (!user || !token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -53,8 +57,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
   return <>{children}</>;
 };
 
-// Store Shell Layout (with persistent Sidebar)
-const StoreLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+// Shared desktop shell. The sidebar keeps navigation available while its compact
+// state gives every role the same full-width workspace as the store owner.
+const AppShellLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] w-full bg-[#FBFBFC] dark:bg-zinc-950 relative">
       <Sidebar />
@@ -67,6 +72,7 @@ const StoreLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
 export const App: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Route-aware 3D atmosphere variant (Specifications 36.1, 36.9, 36.10, 36.11)
   const getAtmosphereVariant = (): AtmosphereVariant => {
@@ -90,13 +96,17 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-surface-bg dark:bg-cyber-bg text-navy-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative overflow-x-hidden">
       {/* 36. Animated Background — Premium 3D Atmosphere */}
       <Atmosphere3DBackground variant={getAtmosphereVariant()} />
-      <Navbar />
-      <div className={`flex-1 relative ${location.pathname === '/' ? '' : 'pt-16'}`}>
+      {!isAuth && <Navbar />}
+      <div className={`flex-1 relative ${location.pathname === "/" || isAuth ? "" : "pt-16"} ${user?.role === "CUSTOMER" && !isAuth ? "pb-16 md:pb-0" : ""}`}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/shop"
+            element={user?.role === 'CUSTOMER' ? <AppShellLayout><ShopPage /></AppShellLayout> : <ShopPage />}
+          />
           <Route path="/quick-setup" element={<QuickSetupPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage initialMode="login" />} />
+          <Route path="/register" element={<RegisterPage initialMode="register" />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -106,7 +116,7 @@ export const App: React.FC = () => {
           <Route
             element={
               <ProtectedRoute allowedRoles={['STORE_OWNER', 'STORE_MANAGER', 'STORE_STAFF']}>
-                <StoreLayout />
+                <AppShellLayout />
               </ProtectedRoute>
             }
           >
@@ -116,6 +126,8 @@ export const App: React.FC = () => {
             <Route path="/store/device-templates" element={<StoreDeviceTemplatesPage />} />
             <Route path="/store/products" element={<StoreProductsPage />} />
             <Route path="/store/analytics" element={<StoreAnalyticsPage />} />
+            <Route path="/store/wallet" element={<StoreWalletPage />} />
+            <Route path="/store/finance" element={<ProtectedRoute allowedRoles={['STORE_OWNER', 'STORE_MANAGER']}><StoreFinancePage /></ProtectedRoute>} />
           </Route>
 
           {/* Standalone Store Profile Route (No Trạm Điều Hành sidebar) */}
@@ -128,49 +140,41 @@ export const App: React.FC = () => {
             }
           />
 
-          {/* Customer Routes */}
+          {/* Customer routes share the collapsible desktop sidebar. */}
           <Route
-            path="/customer/home"
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
-                <CustomerHomePage />
+                <AppShellLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/customer/profile"
-            element={
-              <ProtectedRoute allowedRoles={['CUSTOMER']}>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/customer/home" element={<CustomerHomePage />} />
+            <Route path="/customer/orders" element={<CustomerOrdersPage />} />
+            <Route path="/customer/verification" element={<CustomerVerificationPage />} />
+            <Route path="/customer/profile" element={<ProfilePage />} />
+          </Route>
 
-          {/* Super Admin Routes */}
           <Route
-            path="/admin/dashboard"
+            path="/driver/shifts"
             element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'ADMIN']}>
-                <AdminDashboard />
+              <ProtectedRoute allowedRoles={['STAFF_DELIVERY']}>
+                <DriverShiftPage />
               </ProtectedRoute>
             }
           />
+          {/* Admin routes share the same collapsible desktop sidebar. */}
           <Route
-            path="/admin/security/devices"
             element={
               <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'ADMIN']}>
-                <AdminSecurityHubPage />
+                <AppShellLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/admin/profile"
-            element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'ADMIN']}>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/security/devices" element={<AdminSecurityHubPage />} />
+            <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
+            <Route path="/admin/profile" element={<ProfilePage />} />
+          </Route>
 
           {/* Universal Authenticated Profile Route */}
           <Route
