@@ -14,9 +14,10 @@ const getStoredToken = () => {
 
 export function getSocket(): Socket {
   const envSocketUrl = (import.meta as any).env?.VITE_SOCKET_URL;
-  const targetUrl = (envSocketUrl && typeof envSocketUrl === 'string' && envSocketUrl.startsWith('http'))
+  const rawTarget = (envSocketUrl && typeof envSocketUrl === 'string' && envSocketUrl.startsWith('http'))
     ? envSocketUrl.trim().replace(/\/+$/, '')
     : (typeof resolveApiUrl === 'function' ? resolveApiUrl() : API_URL);
+  const targetUrl = rawTarget || 'https://backend-fae8.onrender.com';
   const token = getStoredToken();
 
   if (!socket) {
