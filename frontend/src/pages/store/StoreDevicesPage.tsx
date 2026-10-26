@@ -3,7 +3,6 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { subscribeToStore, getSocket } from '../../services/socket';
 import { Device, Product, FleetStats, DeviceTelemetry, DeviceAuditLog } from '../../types';
-import { QRCodeSVG } from 'qrcode.react';
 import {
   Cpu,
   Plus,
@@ -11,7 +10,6 @@ import {
   Wifi,
   CheckCircle2,
   AlertCircle,
-  QrCode,
   Sliders,
   FileSpreadsheet,
   Activity,
@@ -47,7 +45,6 @@ import {
   Bluetooth,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { QrCameraScanner } from '../../components/common/QrCameraScanner';
 import { WhiteDeviceAirPodsModal } from '../../components/devices/WhiteDeviceAirPodsModal';
 
 export const StoreDevicesPage: React.FC = () => {
@@ -102,9 +99,8 @@ export const StoreDevicesPage: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [assignCustomName, setAssignCustomName] = useState('');
   const [assignLoading, setAssignLoading] = useState(false);
-
-  // QR Code Modal
-  const [qrModalDevice, setQrModalDevice] = useState<Device | null>(null);
+  // Detail telemetry drawer
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   // Telemetry & Audit Modal
   const [inspectDevice, setInspectDevice] = useState<Device | null>(null);
@@ -220,10 +216,8 @@ export const StoreDevicesPage: React.FC = () => {
       const res = await api.post('/devices', payload);
       if (res.data.success) {
         setShowCreateModal(false);
-        await fetchData();
-        if (res.data.data) {
-          setQrModalDevice(res.data.data);
-        }
+        fetchData();
+        alert(`✅ Đã khởi tạo nút bấm thành công! Mã thiết bị: ${res.data.data?.deviceId || ''}`);
       }
     } catch (err: any) {
       setCreateError(err.response?.data?.message || 'Không thể tạo nút bấm mới');
@@ -336,19 +330,25 @@ export const StoreDevicesPage: React.FC = () => {
       };
 
       socket.on('DEVICE_HEARTBEAT', handleHeartbeat);
+      socket.on('DEVICE_ONLINE', handleHeartbeat);
       socket.on('device:online', handleRefresh);
       socket.on('device:offline', handleRefresh);
       socket.on('device:product_changed', handleRefresh);
       socket.on('device:configured', handleRefresh);
       socket.on('device:deleted', handleRefresh);
+      socket.on('ORDER_CREATED', handleRefresh);
+      socket.on('BUTTON_PRESSING', handleHeartbeat);
 
       return () => {
         socket.off('DEVICE_HEARTBEAT', handleHeartbeat);
+        socket.off('DEVICE_ONLINE', handleHeartbeat);
         socket.off('device:online', handleRefresh);
         socket.off('device:offline', handleRefresh);
         socket.off('device:product_changed', handleRefresh);
         socket.off('device:configured', handleRefresh);
         socket.off('device:deleted', handleRefresh);
+        socket.off('ORDER_CREATED', handleRefresh);
+        socket.off('BUTTON_PRESSING', handleHeartbeat);
       };
     }
   }, [user]);
@@ -433,7 +433,7 @@ export const StoreDevicesPage: React.FC = () => {
     try {
       const res = await api.post(`/devices/${device.deviceId}/re-pair`);
       if (res.data.success) {
-        alert('Đã sinh mã QR và token ghép nối mới!');
+        alert('Đã sinh mã PIN và token ghép nối mới!');
         fetchData();
       }
     } catch (err: any) {
@@ -463,11 +463,11 @@ export const StoreDevicesPage: React.FC = () => {
     }
   };
 
-  // Tra cứu thiết bị theo mã 6 số hoặc QR code
+  // Tra cứu thiết bị theo mã PIN
   const handleStoreLookupCode = async (codeToSearch?: string) => {
     const code = (codeToSearch !== undefined ? codeToSearch : quickCodeInput).trim();
     if (!code) {
-      setWizardError('Vui lòng nhập mã số hoặc quét mã QR');
+      setWizardError('Vui lòng nhập mã số thiết bị');
       return;
     }
     setWizardLoading(true);
@@ -481,7 +481,6 @@ export const StoreDevicesPage: React.FC = () => {
         setQuickConfigCustomName(dev.customName || `Nút ${dev.product?.name || 'Đặt Hàng'}`);
         setQuickConfigQuantity(dev.configuration?.defaultQuantity || 1);
         setQuickConfigLocation(dev.location || '');
-        setStoreCameraActive(false);
         return;
       }
     } catch (err: any) {
@@ -663,21 +662,21 @@ export const StoreDevicesPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Header & Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 rounded-3xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white border border-slate-200/80 rounded-3xl shadow-sm">
         <div className="flex items-center space-x-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/20 shadow-inner">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-500/20 shadow-inner">
             <Cpu className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                 Quản Trị Hạm Đội Nút Bấm IoT
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
                 FLEET v2.0
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Cấu hình phần cứng ESP32, ánh xạ sản phẩm động không cần nạp firmware & theo dõi telemetry thời gian thực
             </p>
           </div>
@@ -707,7 +706,7 @@ export const StoreDevicesPage: React.FC = () => {
               setWizardStep(1);
               setWizardError(null);
             }}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-white/10 flex items-center space-x-2 transition-all"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200/80 flex items-center space-x-2 transition-all"
           >
             <Sparkles className="w-4 h-4 text-cyan-500" />
             <span>Wizard Cấu Hình 4 Bước</span>
@@ -718,7 +717,7 @@ export const StoreDevicesPage: React.FC = () => {
               setShowBulkModal(true);
               handleParseCsv();
             }}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-white/10 flex items-center space-x-2 transition-all"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200/80 flex items-center space-x-2 transition-all"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
             <span>Nhập CSV Hàng Loạt</span>
@@ -726,7 +725,7 @@ export const StoreDevicesPage: React.FC = () => {
 
           <Link
             to="/store/device-templates"
-            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-white/10 flex items-center space-x-2 transition-all"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200/80 flex items-center space-x-2 transition-all"
           >
             <Layers className="w-4 h-4 text-indigo-500" />
             <span>Mẫu Thiết Bị (Templates)</span>
@@ -736,72 +735,72 @@ export const StoreDevicesPage: React.FC = () => {
 
       {/* Fleet KPI Statistics Breakdown */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 shadow-sm">
-          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
             Tổng Thiết Bị
           </div>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
+            <span className="text-2xl font-extrabold font-mono text-slate-900">
               {fleetStats.total}
             </span>
             <span className="text-[11px] text-slate-400">nút toàn mạng</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-500/5 shadow-sm">
+        <div className="p-4 rounded-2xl bg-white border border-emerald-500/20 bg-emerald-500/5 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-mono">
+            <div className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider font-mono">
               Đang Online
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+            <span className="text-2xl font-extrabold font-mono text-emerald-600">
               {fleetStats.online}
             </span>
-            <span className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70">&lt;25s heartbeat</span>
+            <span className="text-[11px] text-emerald-600/70">&lt;25s heartbeat</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 shadow-sm">
-          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
             Chế Độ Deep Sleep
           </div>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-slate-700 dark:text-slate-300">
+            <span className="text-2xl font-extrabold font-mono text-slate-700">
               {fleetStats.offline}
             </span>
             <span className="text-[11px] text-slate-400">&lt;15µA chờ ngắt</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-rose-500/20 dark:border-rose-500/30 bg-rose-500/5 shadow-sm">
-          <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider font-mono">
+        <div className="p-4 rounded-2xl bg-white border border-rose-500/20 bg-rose-500/5 shadow-sm">
+          <div className="text-[11px] font-bold text-rose-600 uppercase tracking-wider font-mono">
             Cảnh Báo Pin Yếu
           </div>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-rose-600 dark:text-rose-400">
+            <span className="text-2xl font-extrabold font-mono text-rose-600">
               {fleetStats.lowBattery}
             </span>
-            <span className="text-[11px] text-rose-600/70 dark:text-rose-400/70">&lt; 20% LiPo</span>
+            <span className="text-[11px] text-rose-600/70">&lt; 20% LiPo</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0F172A] border border-amber-500/20 dark:border-amber-500/30 bg-amber-500/5 shadow-sm col-span-2 md:col-span-1">
-          <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider font-mono">
+        <div className="p-4 rounded-2xl bg-white border border-amber-500/20 bg-amber-500/5 shadow-sm col-span-2 md:col-span-1">
+          <div className="text-[11px] font-bold text-amber-600 uppercase tracking-wider font-mono">
             Chưa Cấu Hình SKU
           </div>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-amber-600 dark:text-amber-400">
+            <span className="text-2xl font-extrabold font-mono text-amber-600">
               {fleetStats.unconfigured}
             </span>
-            <span className="text-[11px] text-amber-600/70 dark:text-amber-400/70">chờ gán sản phẩm</span>
+            <span className="text-[11px] text-amber-600/70">chờ gán sản phẩm</span>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-96">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -809,18 +808,18 @@ export const StoreDevicesPage: React.FC = () => {
             placeholder="Tìm theo Device ID, Tên, Mã PIN 6 số, Vị trí..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+            className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Trạng thái:</span>
+            <span className="text-xs font-bold text-slate-500">Trạng thái:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none"
             >
               <option value="ALL">Tất cả ({devices.length})</option>
               <option value="ACTIVE">Hoạt Động (ACTIVE)</option>
@@ -830,11 +829,11 @@ export const StoreDevicesPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Sản phẩm:</span>
+            <span className="text-xs font-bold text-slate-500">Sản phẩm:</span>
             <select
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none max-w-xs truncate"
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none max-w-xs truncate"
             >
               <option value="ALL">Tất cả sản phẩm</option>
               {products.map((p) => (
@@ -846,14 +845,14 @@ export const StoreDevicesPage: React.FC = () => {
           </div>
 
           {/* Grid vs Table View Mode Switcher */}
-          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 ml-1">
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 ml-1">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  ? 'bg-white text-cyan-600 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
               title="Dạng Lưới (Cards Grid)"
             >
@@ -864,8 +863,8 @@ export const StoreDevicesPage: React.FC = () => {
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  ? 'bg-white text-cyan-600 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
               title="Dạng Bảng (Table View)"
             >
@@ -877,10 +876,10 @@ export const StoreDevicesPage: React.FC = () => {
 
       {/* Device Cards Grid or Table View */}
       {filteredDevices.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-[#0F172A] border border-dashed border-slate-200 dark:border-white/10 rounded-3xl">
-          <Cpu className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-700 dark:text-slate-300">Không tìm thấy thiết bị nào</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
+        <div className="p-12 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
+          <Cpu className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-700">Không tìm thấy thiết bị nào</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
             Thử thay đổi từ khóa tìm kiếm hoặc sử dụng nút <strong>+ Tạo Nút Bấm Mới</strong> để tạo nhanh nút bấm cho cửa hàng.
           </p>
         </div>
@@ -898,11 +897,11 @@ export const StoreDevicesPage: React.FC = () => {
             return (
               <div
                 key={device.id}
-                className="group relative flex flex-col justify-between p-5 bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 hover:border-cyan-500/50 dark:hover:border-cyan-400/40 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-200"
+                className="group relative flex flex-col justify-between p-5 bg-white border border-slate-200/80 hover:border-cyan-500/50 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-200"
               >
                 <div>
                   {/* Top Row: Device ID & Status Pill */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                       <div className="relative flex items-center justify-center">
                         <div
@@ -913,7 +912,7 @@ export const StoreDevicesPage: React.FC = () => {
                           }`}
                         />
                       </div>
-                      <span className="font-mono font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">
+                      <span className="font-mono font-extrabold text-sm text-slate-900 tracking-tight">
                         {device.deviceId}
                       </span>
                       <button
@@ -932,10 +931,10 @@ export const StoreDevicesPage: React.FC = () => {
                     <span
                       className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                         device.status === 'ACTIVE'
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                           : device.status === 'DISABLED'
-                          ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                          : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
+                          ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                          : 'bg-slate-500/10 text-slate-600 border-slate-500/20'
                       }`}
                     >
                       {device.status}
@@ -944,10 +943,10 @@ export const StoreDevicesPage: React.FC = () => {
 
                   {/* Device Custom Name & Location */}
                   <div className="pt-3 pb-2 space-y-1">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors">
+                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-cyan-500 transition-colors">
                       {device.customName || 'Smart Order Button'}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
                       {device.location && (
                         <span className="flex items-center gap-1 font-medium">
                           <MapPin className="w-3 h-3 text-cyan-500" />
@@ -955,11 +954,11 @@ export const StoreDevicesPage: React.FC = () => {
                         </span>
                       )}
                       {device.pairingCode ? (
-                        <span className="font-mono text-[10px] bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 px-1.5 py-0.5 rounded font-bold">
+                        <span className="font-mono text-[10px] bg-cyan-500/10 text-cyan-700 border border-cyan-500/20 px-1.5 py-0.5 rounded font-bold">
                           PIN: {device.pairingCode}
                         </span>
                       ) : device.macAddress ? (
-                        <span className="font-mono text-[10px] bg-slate-100 dark:bg-black/40 px-1.5 py-0.5 rounded text-slate-500">
+                        <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
                           MAC: {device.macAddress}
                         </span>
                       ) : null}
@@ -967,7 +966,7 @@ export const StoreDevicesPage: React.FC = () => {
                   </div>
 
                   {/* Hardware Telemetry Bar */}
-                  <div className="my-3 p-2.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-100 dark:border-white/5 flex flex-col gap-1.5 text-xs font-mono">
+                  <div className="my-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1.5 text-xs font-mono">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
                         <Battery
@@ -979,7 +978,7 @@ export const StoreDevicesPage: React.FC = () => {
                               : 'text-emerald-500'
                           }`}
                         />
-                        <span className="font-bold text-slate-700 dark:text-slate-300">
+                        <span className="font-bold text-slate-700">
                           {device.batteryLevel}%
                         </span>
                       </div>
@@ -994,7 +993,7 @@ export const StoreDevicesPage: React.FC = () => {
                               : 'text-rose-500'
                           }`}
                         />
-                        <span className="text-slate-600 dark:text-slate-400">
+                        <span className="text-slate-600">
                           {device.wifiRSSI} dBm
                         </span>
                       </div>
@@ -1013,18 +1012,18 @@ export const StoreDevicesPage: React.FC = () => {
                     </div>
 
                     {/* Expiration Bar */}
-                    <div className="pt-1.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[10px]">
+                    <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
                       <span className="text-slate-400">Thời hạn dùng:</span>
-                      <span className={`font-bold ${device.expiresAt && new Date(device.expiresAt) < new Date() ? 'text-rose-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                      <span className={`font-bold ${device.expiresAt && new Date(device.expiresAt) < new Date() ? 'text-rose-500' : 'text-slate-700'}`}>
                         {device.expiresAt ? new Date(device.expiresAt).toLocaleDateString('vi-VN') : '1 Năm (Mặc định)'}
                       </span>
                     </div>
                   </div>
 
                   {/* Dynamic Product Mapping Banner */}
-                  <div className="mt-2 p-3 rounded-2xl bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/20 space-y-2">
+                  <div className="mt-2 p-3 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider font-mono">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-cyan-600 uppercase tracking-wider font-mono">
                         <Tag className="w-3 h-3" />
                         <span>Sản Phẩm Đang Ánh Xạ:</span>
                       </div>
@@ -1034,7 +1033,7 @@ export const StoreDevicesPage: React.FC = () => {
                           setSelectedProductId(assignedProduct?.id || '');
                           setAssignCustomName(device.customName || '');
                         }}
-                        className="text-[10px] font-bold text-cyan-600 dark:text-cyan-300 hover:underline flex items-center gap-0.5"
+                        className="text-[10px] font-bold text-cyan-600 hover:underline flex items-center gap-0.5"
                       >
                         <span>Đổi SKU</span>
                         <ChevronRight className="w-3 h-3" />
@@ -1043,21 +1042,21 @@ export const StoreDevicesPage: React.FC = () => {
 
                     {assignedProduct ? (
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        <p className="text-xs font-bold text-slate-900 truncate">
                           {assignedProduct.name}
                         </p>
                         <div className="flex items-center justify-between text-[11px] mt-0.5">
-                          <span className="font-mono text-cyan-600 dark:text-cyan-400 text-[10px]">
+                          <span className="font-mono text-cyan-600 text-[10px]">
                             SKU: {assignedProduct.sku}
                           </span>
-                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                          <span className="font-mono font-bold text-slate-800">
                             {assignedProduct.price?.toLocaleString()} ₫ / {assignedProduct.unit}
                           </span>
                         </div>
                       </div>
                     ) : (
                       <div className="py-1 text-center">
-                        <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                        <p className="text-xs text-amber-600 font-semibold">
                           ⚠️ Chưa gán sản phẩm đặt hàng
                         </p>
                         <button
@@ -1076,7 +1075,7 @@ export const StoreDevicesPage: React.FC = () => {
                 </div>
 
                 {/* Card Bottom Actions */}
-                <div className="pt-4 mt-3 border-t border-slate-100 dark:border-white/5 flex flex-col gap-2">
+                <div className="pt-4 mt-3 border-t border-slate-100 flex flex-col gap-2">
                   <div className="grid grid-cols-3 gap-1.5">
                     <button
                       onClick={() => handleSimulatePress(device.deviceId)}
@@ -1094,7 +1093,7 @@ export const StoreDevicesPage: React.FC = () => {
 
                     <button
                       onClick={() => handleUpdateBattery(device.deviceId, 100)}
-                      className="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                      className="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-500/20 text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
                       title="Sạc / Thay pin mới (Đặt lại 100%)"
                     >
                       <Battery className="w-3 h-3 text-emerald-500" />
@@ -1103,7 +1102,7 @@ export const StoreDevicesPage: React.FC = () => {
 
                     <button
                       onClick={() => handleExtendWarranty(device.deviceId, 12)}
-                      className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
+                      className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-500/20 text-[10px] font-bold flex items-center justify-center gap-1 transition-all"
                       title="Gia hạn thời hạn sử dụng thêm 12 tháng"
                     >
                       <Clock className="w-3 h-3 text-cyan-500" />
@@ -1111,27 +1110,19 @@ export const StoreDevicesPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-50 dark:border-white/5">
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-50">
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => handleOpenEditModal(device)}
-                        className="p-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-600 transition-colors"
                         title="Chỉnh sửa thông tin nút (Edit)"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
 
                       <button
-                        onClick={() => setQrModalDevice(device)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                        title="Xem & In Mã QR Ghép Nối"
-                      >
-                        <QrCode className="w-3.5 h-3.5 text-indigo-500" />
-                      </button>
-
-                      <button
                         onClick={() => handleInspect(device)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                         title="Xem Telemetry & Nhật Ký Kiểm Toán"
                       >
                         <Activity className="w-3.5 h-3.5 text-emerald-500" />
@@ -1139,7 +1130,7 @@ export const StoreDevicesPage: React.FC = () => {
 
                       <button
                         onClick={() => handleRepair(device)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                         title="Tạo Lại Token Ghép Nối (Re-pair)"
                       >
                         <RefreshCw className="w-3.5 h-3.5 text-amber-500" />
@@ -1147,7 +1138,7 @@ export const StoreDevicesPage: React.FC = () => {
 
                       <button
                         onClick={() => setDeletingDevice(device)}
-                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
                         title="Xóa nút bấm (Delete)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1158,8 +1149,8 @@ export const StoreDevicesPage: React.FC = () => {
                       onClick={() => handleToggleStatus(device)}
                       className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center space-x-1 transition-all ${
                         device.status === 'ACTIVE'
-                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'
-                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                       }`}
                     >
                       <Power className="w-3 h-3" />
@@ -1173,10 +1164,10 @@ export const StoreDevicesPage: React.FC = () => {
         </div>
       ) : (
         /* Data Table View */
-        <div className="overflow-hidden rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-white/10 shadow-sm">
+        <div className="overflow-hidden rounded-3xl bg-white border border-slate-200/80 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-black/30 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px] tracking-wider border-b border-slate-200/80 dark:border-white/10">
+              <thead className="bg-slate-50 text-slate-500 font-mono uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                 <tr>
                   <th className="py-3.5 px-4 font-bold">Mã Nút & Tên</th>
                   <th className="py-3.5 px-4 font-bold">Trạng Thái</th>
@@ -1188,7 +1179,7 @@ export const StoreDevicesPage: React.FC = () => {
                   <th className="py-3.5 px-4 font-bold text-right">Thao Tác Quản Lý</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {filteredDevices.map((device) => {
                   const isOnline =
                     device.lastSeenAt &&
@@ -1200,7 +1191,7 @@ export const StoreDevicesPage: React.FC = () => {
                   return (
                     <tr
                       key={device.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
+                      className="hover:bg-slate-50/80 transition-colors"
                     >
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
@@ -1212,11 +1203,11 @@ export const StoreDevicesPage: React.FC = () => {
                             }`}
                           />
                           <div>
-                            <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 dark:text-white">
+                            <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900">
                               <span>{device.deviceId}</span>
                               <button
                                 onClick={() => handleCopy(device.deviceId, device.id)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                className="text-slate-400 hover:text-slate-600"
                                 title="Copy Mã"
                               >
                                 {copiedId === device.id ? (
@@ -1226,7 +1217,7 @@ export const StoreDevicesPage: React.FC = () => {
                                 )}
                               </button>
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                            <div className="text-[11px] text-slate-500 truncate max-w-[200px]">
                               {device.customName || 'Chưa đặt tên'}
                             </div>
                           </div>
@@ -1237,8 +1228,8 @@ export const StoreDevicesPage: React.FC = () => {
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
                             device.status === 'ACTIVE'
-                              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-500/20'
-                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-500/20'
+                              : 'bg-slate-100 text-slate-600'
                           }`}
                         >
                           {device.status}
@@ -1248,10 +1239,10 @@ export const StoreDevicesPage: React.FC = () => {
                       <td className="py-3.5 px-4">
                         {assignedProduct ? (
                           <div>
-                            <div className="font-bold text-slate-900 dark:text-white">
+                            <div className="font-bold text-slate-900">
                               {assignedProduct.name}
                             </div>
-                            <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono">
+                            <div className="text-[10px] text-cyan-600 font-mono">
                               SKU: {assignedProduct.sku} • {assignedProduct.price?.toLocaleString()} ₫
                             </div>
                           </div>
@@ -1262,7 +1253,7 @@ export const StoreDevicesPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                         {device.configuration?.defaultQuantity || 1} {assignedProduct?.unit || 'món'}
                       </td>
 
@@ -1294,7 +1285,7 @@ export const StoreDevicesPage: React.FC = () => {
                               className={
                                 new Date(device.expiresAt).getTime() < Date.now()
                                   ? 'text-rose-500 font-bold'
-                                  : 'text-slate-600 dark:text-slate-400'
+                                  : 'text-slate-600'
                               }
                             >
                               {new Date(device.expiresAt).toLocaleDateString('vi-VN')}
@@ -1308,7 +1299,7 @@ export const StoreDevicesPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-600 text-[11px]">
                         {device.location || '—'}
                       </td>
 
@@ -1316,42 +1307,35 @@ export const StoreDevicesPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleSimulatePress(device.deviceId)}
-                            className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors"
                             title="Thử Nghiệm Nhấn Nút (Tạo đơn ngay)"
                           >
                             <Play className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleUpdateBattery(device.deviceId, 100)}
-                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors"
                             title="Sạc Đầy Pin (100%)"
                           >
                             <Zap className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleExtendWarranty(device.deviceId, 12)}
-                            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors"
                             title="Gia Hạn 12 Tháng (+1 Năm)"
                           >
                             <Calendar className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEditModal(device)}
-                            className="p-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-600 transition-colors"
                             title="Chỉnh sửa nút (Edit)"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => setQrModalDevice(device)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-indigo-500 transition-colors"
-                            title="Mã QR"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                          </button>
-                          <button
                             onClick={() => handleInspect(device)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-emerald-500 transition-colors"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-emerald-500 transition-colors"
                             title="Telemetry & Nhật ký"
                           >
                             <Activity className="w-3.5 h-3.5" />
@@ -1360,8 +1344,8 @@ export const StoreDevicesPage: React.FC = () => {
                             onClick={() => handleToggleStatus(device)}
                             className={`p-1.5 rounded-lg transition-colors ${
                               device.status === 'ACTIVE'
-                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'
-                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                             }`}
                             title={device.status === 'ACTIVE' ? 'Tạm Dừng' : 'Kích Hoạt'}
                           >
@@ -1369,7 +1353,7 @@ export const StoreDevicesPage: React.FC = () => {
                           </button>
                           <button
                             onClick={() => setDeletingDevice(device)}
-                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
                             title="Xóa nút bấm (Delete)"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1390,15 +1374,15 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {showWizard && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150 space-y-5">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-5">
             {/* Wizard Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h2 className="text-lg font-bold text-slate-900">
                   Thêm & Cấu Hình Nút Bấm
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Cấu hình thiết bị phần cứng qua Mã Số PIN hoặc Mã QR
+                <p className="text-xs text-slate-500">
+                  Cấu hình thiết bị phần cứng qua Mã Số PIN
                 </p>
               </div>
               <button
@@ -1406,16 +1390,15 @@ export const StoreDevicesPage: React.FC = () => {
                   setShowWizard(false);
                   setFoundDeviceForConfig(null);
                   setWizardError(null);
-                  setStoreCameraActive(false);
                 }}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200">
               <button
                 type="button"
                 onClick={() => {
@@ -1424,12 +1407,12 @@ export const StoreDevicesPage: React.FC = () => {
                 }}
                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                   wizardMode === 'PAIR_EXISTING'
-                    ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    ? 'bg-white text-sky-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Hash className="w-4 h-4" />
-                <span>Cấu Hình Nút Có Sẵn (Mã 6 số / QR)</span>
+                <span>Cấu Hình Nút Có Sẵn (Mã 6 số)</span>
               </button>
               <button
                 type="button"
@@ -1439,17 +1422,17 @@ export const StoreDevicesPage: React.FC = () => {
                 }}
                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                   wizardMode === 'CREATE_NEW'
-                    ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    ? 'bg-white text-sky-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Plus className="w-4 h-4" />
-                <span>Tạo Mới & Sinh Tem QR</span>
+                <span>Tạo Mới & Cấu Hình</span>
               </button>
             </div>
 
             {wizardError && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{wizardError}</span>
               </div>
@@ -1460,133 +1443,107 @@ export const StoreDevicesPage: React.FC = () => {
               <div className="space-y-4">
                 {!foundDeviceForConfig ? (
                   <div className="space-y-4">
-                    <div className="p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-xl text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2.5">
+                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
                       <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
                         <span className="font-bold">Quy trình ghép nối phía Cửa hàng:</span>
-                        <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                        <p className="text-[11px] text-blue-700">
                           Chủ cửa hàng chỉ cần ghép mã nút & gán sản phẩm từ kho. <strong>Tuyệt đối không cần kết nối Wi-Fi cửa hàng</strong> — Người dùng khi đem nút về nhà sẽ tự bấm kết nối vào Wi-Fi gia đình của họ.
                         </p>
                       </div>
                     </div>
 
-                    {!storeCameraActive ? (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Mã số PIN 6 số hoặc Mã Thiết Bị:
-                          </label>
-                          <input
-                            type="text"
-                            value={quickCodeInput}
-                            onChange={(e) => {
-                              setQuickCodeInput(e.target.value);
-                              setWizardError(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleStoreLookupCode();
-                            }}
-                            placeholder="Ví dụ: 882910 hoặc BTN-8829-WTR"
-                            className="w-full px-4 py-3 text-sm font-mono font-bold tracking-wider rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 font-medium"
-                          />
-                        </div>
-
-                        {/* Quick pills */}
-                        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500">
-                          <span>Mã mẫu:</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuickCodeInput('882910');
-                              handleStoreLookupCode('882910');
-                            }}
-                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 font-mono text-slate-700 dark:text-slate-300 font-semibold"
-                          >
-                            882910
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuickCodeInput('BTN-8829-WTR');
-                              handleStoreLookupCode('BTN-8829-WTR');
-                            }}
-                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 font-mono text-slate-700 dark:text-slate-300 font-semibold"
-                          >
-                            BTN-8829-WTR
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuickCodeInput('SOB-000001');
-                              handleStoreLookupCode('SOB-000001');
-                            }}
-                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 font-mono text-slate-700 dark:text-slate-300 font-semibold"
-                          >
-                            SOB-000001
-                          </button>
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setStoreCameraActive(true)}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5"
-                          >
-                            <Camera className="w-4 h-4 text-sky-500" />
-                            <span>Quét Camera QR</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStoreLookupCode()}
-                            disabled={wizardLoading || !quickCodeInput.trim()}
-                            className="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2"
-                          >
-                            {wizardLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>TÌM THIẾT BỊ NÀY</span>}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <QrCameraScanner
-                          onScanSuccess={(txt) => {
-                            setQuickCodeInput(txt);
-                            handleStoreLookupCode(txt);
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Mã số PIN 6 số hoặc Mã Thiết Bị:
+                        </label>
+                        <input
+                          type="text"
+                          value={quickCodeInput}
+                          onChange={(e) => {
+                            setQuickCodeInput(e.target.value);
+                            setWizardError(null);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleStoreLookupCode();
+                          }}
+                          placeholder="Ví dụ: 882910 hoặc BTN-8829-WTR"
+                          className="w-full px-4 py-3 text-sm font-mono font-bold tracking-wider rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 font-medium"
                         />
+                      </div>
+
+                      {/* Quick pills */}
+                      <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500">
+                        <span>Mã mẫu:</span>
                         <button
                           type="button"
-                          onClick={() => setStoreCameraActive(false)}
-                          className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300"
+                          onClick={() => {
+                            setQuickCodeInput('882910');
+                            handleStoreLookupCode('882910');
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 font-mono text-slate-700 font-semibold"
                         >
-                          Chuyển về nhập mã số thủ công
+                          882910
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCodeInput('BTN-8829-WTR');
+                            handleStoreLookupCode('BTN-8829-WTR');
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 font-mono text-slate-700 font-semibold"
+                        >
+                          BTN-8829-WTR
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCodeInput('SOB-000001');
+                            handleStoreLookupCode('SOB-000001');
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 font-mono text-slate-700 font-semibold"
+                        >
+                          SOB-000001
                         </button>
                       </div>
-                    )}
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStoreLookupCode()}
+                          disabled={wizardLoading || !quickCodeInput.trim()}
+                          className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2"
+                        >
+                          {wizardLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>TÌM THIẾT BỊ NÀY</span>}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   /* Device Found -> Map Product & Save */
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 text-xs space-y-1.5">
-                      <div className="flex justify-between items-center font-bold text-emerald-700 dark:text-emerald-400">
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5">
+                      <div className="flex justify-between items-center font-bold text-emerald-700">
                         <span className="flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4" />
                           Đã tìm thấy thiết bị
                         </span>
                         <span className="font-mono">{foundDeviceForConfig.deviceId}</span>
                       </div>
-                      <p className="text-slate-600 dark:text-slate-300">
+                      <p className="text-slate-600">
                         Mã PIN: <strong className="font-mono text-sky-600">{foundDeviceForConfig.pairingCode || 'Không có'}</strong> • Pin: {foundDeviceForConfig.batteryLevel ?? 95}% • Sóng: {foundDeviceForConfig.wifiRSSI ?? -55} dBm
                       </p>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         Sản phẩm gán cho nút này *
                       </label>
                       <select
                         value={quickConfigProductId}
                         onChange={(e) => setQuickConfigProductId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium"
+                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium"
                       >
                         <option value="">-- Chọn sản phẩm trong kho cửa hàng --</option>
                         {products.map((p) => (
@@ -1598,7 +1555,7 @@ export const StoreDevicesPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         Tên gọi thiết bị (Hiển thị cho khách hàng & quản lý):
                       </label>
                       <input
@@ -1606,13 +1563,13 @@ export const StoreDevicesPage: React.FC = () => {
                         value={quickConfigCustomName}
                         onChange={(e) => setQuickConfigCustomName(e.target.value)}
                         placeholder="VD: Nút Nước Lavie Bếp, Nút Gas..."
-                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
                           Số lượng mỗi lần bấm:
                         </label>
                         <input
@@ -1621,11 +1578,11 @@ export const StoreDevicesPage: React.FC = () => {
                           max={20}
                           value={quickConfigQuantity}
                           onChange={(e) => setQuickConfigQuantity(parseInt(e.target.value, 10) || 1)}
-                          className="w-full px-3.5 py-2.5 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                          className="w-full px-3.5 py-2.5 text-xs font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
                           Vị trí (Tuỳ chọn):
                         </label>
                         <input
@@ -1633,7 +1590,7 @@ export const StoreDevicesPage: React.FC = () => {
                           value={quickConfigLocation}
                           onChange={(e) => setQuickConfigLocation(e.target.value)}
                           placeholder="VD: Bếp ăn, Phòng khách"
-                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900"
                         />
                       </div>
                     </div>
@@ -1645,7 +1602,7 @@ export const StoreDevicesPage: React.FC = () => {
                           setFoundDeviceForConfig(null);
                           setWizardError(null);
                         }}
-                        className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                        className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
                       >
                         Đổi mã khác
                       </button>
@@ -1663,13 +1620,13 @@ export const StoreDevicesPage: React.FC = () => {
               </div>
             )}
 
-            {/* MODE 2: CREATE NEW HARDWARE PROFILE FOR PRINTING STICKERS */}
+            {/* MODE 2: CREATE NEW HARDWARE PROFILE */}
             {wizardMode === 'CREATE_NEW' && (
               <div className="space-y-4">
                 {wizardStep === 1 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         Tên gợi nhớ cho nút bấm *
                       </label>
                       <input
@@ -1678,18 +1635,18 @@ export const StoreDevicesPage: React.FC = () => {
                         placeholder="VD: Nút Nước Lavie Bếp Ăn, Nút Gas Kho B..."
                         value={wizardForm.customName}
                         onChange={(e) => setWizardForm({ ...wizardForm, customName: e.target.value })}
-                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium"
+                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
                         Sản phẩm gán đặt hàng mỗi lần bấm *
                       </label>
                       <select
                         value={wizardForm.productId}
                         onChange={(e) => setWizardForm({ ...wizardForm, productId: e.target.value })}
-                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium"
+                        className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium"
                       >
                         <option value="">-- Chọn sản phẩm trong kho cửa hàng --</option>
                         {products.map((p) => (
@@ -1702,7 +1659,7 @@ export const StoreDevicesPage: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
                           Số lượng mỗi lần bấm
                         </label>
                         <input
@@ -1716,12 +1673,12 @@ export const StoreDevicesPage: React.FC = () => {
                               defaultQuantity: parseInt(e.target.value, 10) || 1,
                             })
                           }
-                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-mono"
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
                           Vị trí lắp đặt (Tùy chọn)
                         </label>
                         <input
@@ -1729,13 +1686,13 @@ export const StoreDevicesPage: React.FC = () => {
                           placeholder="VD: Bếp ăn, Phòng khách, Kho"
                           value={wizardForm.location}
                           onChange={(e) => setWizardForm({ ...wizardForm, location: e.target.value })}
-                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                          className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900"
                         />
                       </div>
                     </div>
 
                     {/* Collapsible Advanced Options */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-2 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setShowTechOptions(!showTechOptions)}
@@ -1745,9 +1702,9 @@ export const StoreDevicesPage: React.FC = () => {
                       </button>
 
                       {showTechOptions && (
-                        <div className="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+                        <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                           <div>
-                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
                               Mã Device ID (Để trống hệ thống tự sinh SOB-XXXXXX)
                             </label>
                             <input
@@ -1757,13 +1714,13 @@ export const StoreDevicesPage: React.FC = () => {
                               onChange={(e) =>
                                 setWizardForm({ ...wizardForm, deviceId: e.target.value.toUpperCase() })
                               }
-                              className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                              className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white border border-slate-200 text-slate-900"
                             />
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                              <label className="block text-[11px] font-bold text-slate-600 mb-1">
                                 Địa chỉ MAC (Tùy chọn)
                               </label>
                               <input
@@ -1773,12 +1730,12 @@ export const StoreDevicesPage: React.FC = () => {
                                 onChange={(e) =>
                                   setWizardForm({ ...wizardForm, macAddress: e.target.value.toUpperCase() })
                                 }
-                                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white border border-slate-200 text-slate-900"
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                                Mã Claim Code (In trên tem)
+                              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                Mã Claim Code
                               </label>
                               <input
                                 type="text"
@@ -1787,7 +1744,7 @@ export const StoreDevicesPage: React.FC = () => {
                                 onChange={(e) =>
                                   setWizardForm({ ...wizardForm, claimCode: e.target.value.toUpperCase() })
                                 }
-                                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white border border-slate-200 text-slate-900"
                               />
                             </div>
                           </div>
@@ -1817,22 +1774,22 @@ export const StoreDevicesPage: React.FC = () => {
 
                 {wizardStep === 2 && (
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                      <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span className="text-slate-500">Tên Nút Bấm:</span>
-                        <span className="font-bold text-slate-900 dark:text-white">
+                        <span className="font-bold text-slate-900">
                           {wizardForm.customName || 'Smart Order Button'}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span className="text-slate-500">Sản Phẩm Đặt:</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="font-bold text-emerald-600">
                           {products.find((p) => p.id === wizardForm.productId)?.name || 'Chưa chọn'}
                         </span>
                       </div>
 
-                      <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span className="text-slate-500">Mã Device ID:</span>
                         <span className="font-mono font-bold text-sky-600">
                           {wizardForm.deviceId || '(Tự động sinh)'}
@@ -1840,11 +1797,11 @@ export const StoreDevicesPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setWizardStep(1)}
-                        className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700"
                       >
                         Quay lại
                       </button>
@@ -1856,7 +1813,7 @@ export const StoreDevicesPage: React.FC = () => {
                         className="px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center space-x-1.5"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>{wizardLoading ? 'Đang tạo...' : 'HOÀN TẤT & SINH TEM QR'}</span>
+                        <span>{wizardLoading ? 'Đang tạo...' : 'HOÀN TẤT & TẠO THIẾT BỊ'}</span>
                       </button>
                     </div>
                   </div>
@@ -1872,37 +1829,37 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {assigningDevice && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <Tag className="w-5 h-5 text-cyan-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900">
                   Đổi Ánh Xạ Sản Phẩm / SKU
                 </h3>
               </div>
               <button
                 onClick={() => setAssigningDevice(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500">
               Thiết bị: <strong className="font-mono text-cyan-500">{assigningDevice.deviceId}</strong> ({assigningDevice.customName || 'Không tên'}).
               Khi đổi sản phẩm, lần bấm tiếp theo sẽ đặt sản phẩm mới ngay tức thì.
             </p>
 
             <form onSubmit={handleAssignSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Chọn Sản Phẩm Mới Trong Kho *
                 </label>
                 <select
                   required
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                 >
                   <option value="">-- Chọn sản phẩm --</option>
                   {products.map((p) => (
@@ -1914,7 +1871,7 @@ export const StoreDevicesPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Tên Gợi Nhớ Nút (Tùy chọn)
                 </label>
                 <input
@@ -1922,7 +1879,7 @@ export const StoreDevicesPage: React.FC = () => {
                   placeholder="VD: Nút Gas Bếp Chính"
                   value={assignCustomName}
                   onChange={(e) => setAssignCustomName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                 />
               </div>
 
@@ -1930,7 +1887,7 @@ export const StoreDevicesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAssigningDevice(null)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700"
                 >
                   Hủy
                 </button>
@@ -1947,108 +1904,41 @@ export const StoreDevicesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 3. SECURE QR CODE PAIRING MODAL                                           */}
-      {/* ========================================================================= */}
-      {qrModalDevice && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4 text-center">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/5">
-              <div className="flex items-center space-x-2">
-                <QrCode className="w-5 h-5 text-cyan-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Tem QR Ghép Nối Thiết Bị
-                </h3>
-              </div>
-              <button
-                onClick={() => setQrModalDevice(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Printable Sticker Preview (Section 9 Official Label Spec) */}
-            <div className="p-5 rounded-2xl bg-white text-slate-900 border-2 border-slate-900 shadow-lg inline-block mx-auto w-64 text-center font-sans">
-              <div className="text-xs font-black tracking-wider text-slate-900 mb-1 uppercase border-b pb-1.5 border-slate-200">
-                SMART ORDER BUTTON
-              </div>
-
-              <div className="py-1 text-xs text-slate-600 font-medium">
-                Device
-                <p className="text-base font-mono font-black text-slate-950 tracking-tight">{qrModalDevice.deviceId}</p>
-              </div>
-
-              <div className="p-2 bg-white rounded-xl border border-slate-100 shadow-inner inline-block my-1.5">
-                <QRCodeSVG
-                  value={qrModalDevice.qrPayload || `SOBPAIR://setup?device=${qrModalDevice.deviceId}&token=${qrModalDevice.pairingToken || 'DEMO'}&v=1`}
-                  size={160}
-                  level="H"
-                />
-              </div>
-
-              <div className="space-y-0.5 mt-1">
-                <p className="text-xs font-bold text-slate-900">Scan to Setup</p>
-                <p className="text-[10px] text-slate-500 italic mt-1">Do not remove this label.</p>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Payload: <span className="font-mono text-[10px] break-all">{qrModalDevice.qrPayload}</span>
-            </p>
-
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-cyan-500/20"
-              >
-                <Printer className="w-4 h-4" />
-                <span>In Tem Dán Hộp</span>
-              </button>
-              <button
-                onClick={() => setQrModalDevice(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* 4. TELEMETRY & AUDIT LOGS MODAL                                           */}
       {/* ========================================================================= */}
       {inspectDevice && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <div className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-cyan-500" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Thông Số Telemetry & Nhật Ký Kiểm Toán
                   </h3>
                 </div>
-                <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs font-mono text-slate-500 mt-0.5">
                   Device: {inspectDevice.deviceId} ({inspectDevice.customName || 'Smart Button'})
                 </p>
               </div>
               <button
                 onClick={() => setInspectDevice(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-white/10 text-xs font-bold">
+            <div className="flex border-b border-slate-200 text-xs font-bold">
               <button
                 onClick={() => setActiveTab('telemetry')}
                 className={`pb-2.5 px-4 transition-colors ${
                   activeTab === 'telemetry'
-                    ? 'border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                    ? 'border-b-2 border-cyan-500 text-cyan-600'
                     : 'text-slate-500'
                 }`}
               >
@@ -2058,7 +1948,7 @@ export const StoreDevicesPage: React.FC = () => {
                 onClick={() => setActiveTab('audit')}
                 className={`pb-2.5 px-4 transition-colors ${
                   activeTab === 'audit'
-                    ? 'border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                    ? 'border-b-2 border-cyan-500 text-cyan-600'
                     : 'text-slate-500'
                 }`}
               >
@@ -2073,7 +1963,7 @@ export const StoreDevicesPage: React.FC = () => {
                   <p className="text-slate-400 py-6 text-center">Chưa có bản tin telemetry nào được gửi.</p>
                 ) : (
                   <table className="w-full text-left">
-                    <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-100 dark:border-white/5">
+                    <thead className="text-[10px] uppercase text-slate-400 border-b border-slate-100">
                       <tr>
                         <th className="py-2">Thời gian</th>
                         <th className="py-2">Pin %</th>
@@ -2082,19 +1972,19 @@ export const StoreDevicesPage: React.FC = () => {
                         <th className="py-2">Boot Reason</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    <tbody className="divide-y divide-slate-100">
                       {telemetries.map((t) => (
-                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <tr key={t.id} className="hover:bg-slate-50">
                           <td className="py-2 text-slate-500">
                             {new Date(t.createdAt).toLocaleTimeString('vi-VN')}
                           </td>
-                          <td className="py-2 font-bold text-slate-900 dark:text-white">
+                          <td className="py-2 font-bold text-slate-900">
                             {t.batteryLevel}%
                           </td>
-                          <td className="py-2 text-slate-600 dark:text-slate-300">
+                          <td className="py-2 text-slate-600">
                             {t.voltageMv} mV
                           </td>
-                          <td className="py-2 text-cyan-600 dark:text-cyan-400">
+                          <td className="py-2 text-cyan-600">
                             {t.wifiRSSI} dBm
                           </td>
                           <td className="py-2 text-slate-500">{t.bootReason}</td>
@@ -2116,7 +2006,7 @@ export const StoreDevicesPage: React.FC = () => {
                     {auditLogs.map((log) => (
                       <div
                         key={log.id}
-                        className="p-3 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200/60 dark:border-white/5 space-y-1"
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1"
                       >
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-mono font-bold text-cyan-500">{log.action}</span>
@@ -2125,12 +2015,12 @@ export const StoreDevicesPage: React.FC = () => {
                           </span>
                         </div>
                         {log.oldValues && (
-                          <p className="text-[11px] text-rose-600 dark:text-rose-400 font-mono truncate">
+                          <p className="text-[11px] text-rose-600 font-mono truncate">
                             Cũ: {log.oldValues}
                           </p>
                         )}
                         {log.newValues && (
-                          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono truncate">
+                          <p className="text-[11px] text-emerald-600 font-mono truncate">
                             Mới: {log.newValues}
                           </p>
                         )}
@@ -2141,10 +2031,10 @@ export const StoreDevicesPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-white/5">
+            <div className="flex justify-end pt-3 border-t border-slate-100">
               <button
                 onClick={() => setInspectDevice(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"
               >
                 Đóng
               </button>
@@ -2158,23 +2048,23 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900">
                   Nhập Thiết Bị Hàng Loạt Qua CSV
                 </h3>
               </div>
               <button
                 onClick={() => setShowBulkModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500">
               Định dạng CSV hỗ trợ: <code className="text-cyan-500 font-mono">deviceId,serialNumber,macAddress,customName,productSku</code>.
               Hệ thống sẽ kiểm tra trùng Device ID, trùng MAC và gán SKU tự động.
             </p>
@@ -2184,20 +2074,20 @@ export const StoreDevicesPage: React.FC = () => {
                 rows={5}
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
-                className="w-full p-3 font-mono text-xs rounded-xl bg-slate-50 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                className="w-full p-3 font-mono text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
               />
               <button
                 type="button"
                 onClick={handleParseCsv}
-                className="mt-2 px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 flex items-center gap-1.5"
+                className="mt-2 px-3.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 flex items-center gap-1.5"
               >
-                <Search className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
+                <Search className="w-3.5 h-3.5 text-blue-600" />
                 <span>Phân Tích & Kiểm Tra Tính Hợp Lệ</span>
               </button>
             </div>
 
             {bulkErrors.length > 0 && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-semibold space-y-1 max-h-32 overflow-y-auto">
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-semibold space-y-1 max-h-32 overflow-y-auto">
                 {bulkErrors.map((err, idx) => (
                   <p key={idx} className="flex items-center gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
@@ -2208,7 +2098,7 @@ export const StoreDevicesPage: React.FC = () => {
             )}
 
             {bulkSuccessMsg && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-xl text-xs font-semibold flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{bulkSuccessMsg}</span>
               </div>
@@ -2216,12 +2106,12 @@ export const StoreDevicesPage: React.FC = () => {
 
             {bulkPreview.length > 0 && (
               <div>
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <div className="text-xs font-bold text-slate-700 mb-1.5">
                   Xem trước dữ liệu ({bulkPreview.length} dòng):
                 </div>
-                <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-white/10 rounded-xl">
+                <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl">
                   <table className="w-full text-left text-[11px] font-mono">
-                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 border-b border-slate-200 dark:border-white/10">
+                    <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                       <tr>
                         <th className="p-2">Device ID</th>
                         <th className="p-2">MAC</th>
@@ -2229,13 +2119,13 @@ export const StoreDevicesPage: React.FC = () => {
                         <th className="p-2">Product SKU</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    <tbody className="divide-y divide-slate-100">
                       {bulkPreview.map((r, i) => (
                         <tr key={i}>
-                          <td className="p-2 font-bold text-slate-900 dark:text-white">{r.deviceId}</td>
+                          <td className="p-2 font-bold text-slate-900">{r.deviceId}</td>
                           <td className="p-2 text-slate-500">{r.macAddress || '-'}</td>
-                          <td className="p-2 text-slate-700 dark:text-slate-300">{r.customName || '-'}</td>
-                          <td className="p-2 text-cyan-600 dark:text-cyan-400">{r.productSku || '-'}</td>
+                          <td className="p-2 text-slate-700">{r.customName || '-'}</td>
+                          <td className="p-2 text-cyan-600">{r.productSku || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2244,11 +2134,11 @@ export const StoreDevicesPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowBulkModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"
               >
                 Hủy
               </button>
@@ -2269,31 +2159,31 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center border border-cyan-500/20">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-base font-bold text-slate-900">
                     Tạo Nút Bấm IoT Mới
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Thêm thiết bị Smart Order Button vào hạm đội của cửa hàng
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {createError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-600 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{createError}</span>
               </div>
@@ -2302,7 +2192,7 @@ export const StoreDevicesPage: React.FC = () => {
             <form onSubmit={handleCreateDeviceSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Mã Thiết Bị (Device ID) *
                   </label>
                   <div className="flex gap-1.5">
@@ -2313,7 +2203,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onChange={(e) =>
                         setCreateForm({ ...createForm, deviceId: e.target.value.toUpperCase() })
                       }
-                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                       placeholder="SOB-000101"
                     />
                     <button
@@ -2321,7 +2211,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onClick={() =>
                         setCreateForm({ ...createForm, deviceId: generateRandomDeviceId() })
                       }
-                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500"
                       title="Sinh mã ngẫu nhiên"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -2330,7 +2220,7 @@ export const StoreDevicesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Số Serial Phần Cứng *
                   </label>
                   <div className="flex gap-1.5">
@@ -2341,7 +2231,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onChange={(e) =>
                         setCreateForm({ ...createForm, serialNumber: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                       placeholder="ESP32-XXXX"
                     />
                     <button
@@ -2349,7 +2239,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onClick={() =>
                         setCreateForm({ ...createForm, serialNumber: generateRandomSerialNumber() })
                       }
-                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500"
                       title="Sinh serial ngẫu nhiên"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -2360,7 +2250,7 @@ export const StoreDevicesPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Tên Nút Bấm Hiển Thị *
                   </label>
                   <input
@@ -2368,41 +2258,41 @@ export const StoreDevicesPage: React.FC = () => {
                     required
                     value={createForm.customName}
                     onChange={(e) => setCreateForm({ ...createForm, customName: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="VD: Nút Lavie Bếp B1"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Địa chỉ MAC (Tùy chọn)
                   </label>
                   <input
                     type="text"
                     value={createForm.macAddress}
                     onChange={(e) => setCreateForm({ ...createForm, macAddress: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="24:6F:28:AB:CD:12"
                   />
                 </div>
               </div>
 
               {/* Product Mapping & Quantity */}
-              <div className="p-3.5 rounded-2xl bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/20 space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400">
+              <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-600">
                   <Tag className="w-3.5 h-3.5" />
                   <span>Ánh Xạ Sản Phẩm Đặt Hàng Nhanh (1 Chạm)</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
                       Sản phẩm được giao
                     </label>
                     <select
                       value={createForm.productId}
                       onChange={(e) => setCreateForm({ ...createForm, productId: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     >
                       <option value="">-- Chưa gán sản phẩm --</option>
                       {products.map((p) => (
@@ -2414,7 +2304,7 @@ export const StoreDevicesPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
                       Số lượng mặc định
                     </label>
                     <input
@@ -2425,7 +2315,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onChange={(e) =>
                         setCreateForm({ ...createForm, defaultQuantity: Number(e.target.value) || 1 })
                       }
-                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
+                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
                     />
                   </div>
                 </div>
@@ -2433,42 +2323,42 @@ export const StoreDevicesPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Vị Trí Lắp Đặt
                   </label>
                   <input
                     type="text"
                     value={createForm.location}
                     onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="VD: Phòng Bếp Tầng 2"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Mô Tả / Ghi Chú
                   </label>
                   <input
                     type="text"
                     value={createForm.description}
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="Ghi chú thêm..."
                   />
                 </div>
               </div>
 
               {/* Status, Battery & Expiration Configuration */}
-              <div className="grid grid-cols-3 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-slate-800">
+              <div className="grid grid-cols-3 gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Trạng Thái Ban Đầu
                   </label>
                   <select
                     value={createForm.status}
                     onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   >
                     <option value="ACTIVE">Hoạt Động (ACTIVE)</option>
                     <option value="READY_FOR_CUSTOMER">Sẵn Sàng Giao Khách</option>
@@ -2477,7 +2367,7 @@ export const StoreDevicesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Dung Lượng Pin (%)
                   </label>
                   <input
@@ -2486,28 +2376,28 @@ export const StoreDevicesPage: React.FC = () => {
                     max={100}
                     value={createForm.batteryLevel}
                     onChange={(e) => setCreateForm({ ...createForm, batteryLevel: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Thời Hạn Sử Dụng
                   </label>
                   <input
                     type="date"
                     value={createForm.expiresAt}
                     onChange={(e) => setCreateForm({ ...createForm, expiresAt: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
                 >
                   Hủy Bỏ
                 </button>
@@ -2536,36 +2426,36 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {editingDevice && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center border border-cyan-500/20">
                   <Edit3 className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-base font-bold text-slate-900">
                       Chỉnh Sửa Nút Bấm
                     </h2>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">
                       {editingDevice.deviceId}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Cập nhật thông tin cấu hình và sản phẩm gán tức thời
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingDevice(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {editError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-600 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{editError}</span>
               </div>
@@ -2574,7 +2464,7 @@ export const StoreDevicesPage: React.FC = () => {
             <form onSubmit={handleEditDeviceSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Tên Nút Bấm Hiển Thị *
                   </label>
                   <input
@@ -2582,19 +2472,19 @@ export const StoreDevicesPage: React.FC = () => {
                     required
                     value={editForm.customName}
                     onChange={(e) => setEditForm({ ...editForm, customName: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="VD: Nút Nước Bếp"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Trạng Thái Hoạt Động
                   </label>
                   <select
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   >
                     <option value="ACTIVE">Hoạt Động (ACTIVE)</option>
                     <option value="DISABLED">Tạm Dừng (DISABLED)</option>
@@ -2604,21 +2494,21 @@ export const StoreDevicesPage: React.FC = () => {
               </div>
 
               {/* Product Mapping & Quantity */}
-              <div className="p-3.5 rounded-2xl bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/20 space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400">
+              <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-600">
                   <Tag className="w-3.5 h-3.5" />
                   <span>Sản Phẩm Đang Ánh Xạ</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
                       Chọn sản phẩm gán mới
                     </label>
                     <select
                       value={editForm.productId}
                       onChange={(e) => setEditForm({ ...editForm, productId: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     >
                       <option value="">-- Không gán sản phẩm --</option>
                       {products.map((p) => (
@@ -2630,7 +2520,7 @@ export const StoreDevicesPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
                       Số lượng mặc định
                     </label>
                     <input
@@ -2641,7 +2531,7 @@ export const StoreDevicesPage: React.FC = () => {
                       onChange={(e) =>
                         setEditForm({ ...editForm, defaultQuantity: Number(e.target.value) || 1 })
                       }
-                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
+                      className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
                     />
                   </div>
                 </div>
@@ -2649,36 +2539,36 @@ export const StoreDevicesPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Vị Trí Lắp Đặt
                   </label>
                   <input
                     type="text"
                     value={editForm.location}
                     onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="VD: Phòng Bếp Tầng 2"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Mô Tả / Ghi Chú
                   </label>
                   <input
                     type="text"
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                     placeholder="Ghi chú..."
                   />
                 </div>
               </div>
 
               {/* Battery & Expiration Configuration */}
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-slate-800">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Dung Lượng Pin Hiện Tại (%)
                   </label>
                   <input
@@ -2687,28 +2577,28 @@ export const StoreDevicesPage: React.FC = () => {
                     max={100}
                     value={editForm.batteryLevel}
                     onChange={(e) => setEditForm({ ...editForm, batteryLevel: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-center"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Thời Hạn Sử Dụng / Bảo Hành
                   </label>
                   <input
                     type="date"
                     value={editForm.expiresAt}
                     onChange={(e) => setEditForm({ ...editForm, expiresAt: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setEditingDevice(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
                 >
                   Hủy Bỏ
                 </button>
@@ -2730,45 +2620,45 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {deletingDevice && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-500/30 animate-in fade-in zoom-in-95 duration-150 space-y-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-500/30 animate-in fade-in zoom-in-95 duration-150 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-rose-500" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900">
                   Xác Nhận Xóa Nút Bấm
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500">
                   Hành động này sẽ gỡ nút khỏi hệ thống cửa hàng
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 space-y-1.5 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-500">Mã Thiết Bị:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
+                <span className="font-mono font-bold text-slate-900">
                   {deletingDevice.deviceId}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Tên Hiển Thị:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="font-semibold text-slate-800">
                   {deletingDevice.customName || 'Chưa đặt tên'}
                 </span>
               </div>
               {deletingDevice.location && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">Vị Trí:</span>
-                  <span className="text-slate-800 dark:text-slate-200">
+                  <span className="text-slate-800">
                     {deletingDevice.location}
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 flex items-start gap-2">
               <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span><strong>Lưu ý:</strong> Lịch sử các đơn hàng trước đây từng đặt qua nút bấm này vẫn được bảo toàn 100% trong báo cáo doanh thu.</span>
             </div>
@@ -2777,7 +2667,7 @@ export const StoreDevicesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeletingDevice(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
               >
                 Hủy Bỏ
               </button>
@@ -2806,55 +2696,55 @@ export const StoreDevicesPage: React.FC = () => {
       {/* ========================================================================= */}
       {simulationResult && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0F172A] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-indigo-500/30 animate-in fade-in zoom-in-95 duration-150 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-indigo-500/30 animate-in fade-in zoom-in-95 duration-150 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center border border-indigo-500/20">
                   <Play className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Mô Phỏng Nhấn Nút Thành Công
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Sự kiện gửi qua server và tạo đơn tự động tức thì
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSimulationResult(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+              <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{simulationResult.message || 'Đơn hàng mới đã được khởi tạo!'}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-emerald-500/10">
                 <span className="text-slate-500">Mã Đơn Hàng:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
+                <span className="font-mono font-bold text-slate-900">
                   #{simulationResult.order?.orderNumber || simulationResult.order?.id?.slice(0, 8)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Sản Phẩm:</span>
-                <span className="font-bold text-slate-900 dark:text-white">
+                <span className="font-bold text-slate-900">
                   {simulationResult.order?.items?.[0]?.product?.name || 'Sản phẩm đã gán'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Số Lượng:</span>
-                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                <span className="font-mono font-bold text-indigo-600">
                   x{simulationResult.order?.items?.[0]?.quantity || 1}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Tổng Tiền:</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="font-mono font-bold text-emerald-600">
                   {(simulationResult.order?.totalAmount || 0).toLocaleString()} ₫
                 </span>
               </div>
