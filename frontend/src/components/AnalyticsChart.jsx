@@ -16,7 +16,7 @@ export const AnalyticsChart = ({ data }) => {
 
   if (!data || data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs font-mono">
+      <div className="h-64 flex items-center justify-center text-slate-400 text-xs font-mono">
         Chưa có đủ dữ liệu telemetry để hiển thị biểu đồ
       </div>
     );
