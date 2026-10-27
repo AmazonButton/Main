@@ -78,7 +78,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface-bg dark:bg-cyber-bg text-navy-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col transition-colors duration-200 relative overflow-x-hidden">
       {/* 36. Animated Background — Premium 3D Atmosphere */}
       <Atmosphere3DBackground variant={getAtmosphereVariant()} />
       <Navbar />
