@@ -9,5 +9,15 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'unsafe-none',
+    },
+    proxy: {
+      '/api': {
+        target: 'https://fragrant-mode-3a41.ptt24032004.workers.dev',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });
