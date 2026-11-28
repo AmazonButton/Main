@@ -899,50 +899,48 @@ export const CustomerOrdersPage: React.FC = () => {
                                       : String(order.paymentStatus || '').toUpperCase() === 'PAID' ? 'Đã thanh toán thành công qua PayOS' : 'Thanh toán trực tuyến PayOS (Chờ thanh toán)'}
                                   </span>
                                 </div>
-                                {isRefundPending && (
-                                  <div className="mt-2.5 p-3 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 flex flex-col gap-2.5">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                      <div className="text-xs text-sky-900 dark:text-sky-200">
-                                        <p className="font-semibold">Tiến độ hoàn tiền (REFUND_PENDING)</p>
-                                        <p className="text-[11px] text-sky-700 dark:text-sky-300 mt-0.5">
-                                          Đơn đã thanh toán trước khi hủy. Vui lòng cập nhật tài khoản ngân hàng chính chủ để hệ thống chi trả qua PayOS Payout.
-                                        </p>
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            void loadOrders();
-                                          }}
-                                          className="inline-flex items-center gap-1 rounded-lg border border-sky-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-50"
-                                        >
-                                          <RefreshCw className="w-3 h-3" />
-                                          Kiểm tra tiến độ
-                                        </button>
-                                        <Link
-                                          to="/customer/banking"
-                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#287DA8] text-white text-xs font-semibold hover:bg-[#20668a] transition shadow-xs"
-                                        >
-                                          <span>Cập nhật tài khoản ngân hàng</span>
-                                        </Link>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                {isRefunded && (
-                                  <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 flex items-center gap-2.5 text-xs text-emerald-900 dark:text-emerald-200">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                    <div>
-                                      <p className="font-semibold">Đã hoàn tiền thành công về tài khoản</p>
-                                      <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
-                                        Giao dịch chi hoàn qua PayOS Payout đã được đối soát hoàn tất.
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             </div>
+                            {isRefundPending && (
+                              <div className="mt-3 p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1 text-xs text-sky-900 dark:text-sky-200">
+                                  <p className="font-semibold">Tiến độ hoàn tiền (REFUND_PENDING)</p>
+                                  <p className="text-[11px] text-sky-700 dark:text-sky-300 mt-0.5 leading-relaxed">
+                                    Đơn đã thanh toán trước khi hủy. Vui lòng cập nhật tài khoản ngân hàng chính chủ để hệ thống chi trả qua PayOS Payout.
+                                  </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void loadOrders();
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-sky-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sky-800 hover:bg-sky-50"
+                                  >
+                                    <RefreshCw className="w-3 h-3" />
+                                    Kiểm tra tiến độ
+                                  </button>
+                                  <Link
+                                    to="/customer/banking"
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#287DA8] text-white text-xs font-semibold hover:bg-[#20668a] transition shadow-xs"
+                                  >
+                                    <span>Cập nhật tài khoản ngân hàng</span>
+                                  </Link>
+                                </div>
+                              </div>
+                            )}
+                            {isRefunded && (
+                              <div className="mt-3 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 flex items-center gap-2.5 text-xs text-emerald-900 dark:text-emerald-200">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold">Đã hoàn tiền thành công về tài khoản</p>
+                                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                                    Giao dịch chi hoàn qua PayOS Payout đã được đối soát hoàn tất.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                             <div className="mt-4 pt-3 border-t border-slate-200/70 flex justify-between text-sm font-bold text-slate-900 dark:border-zinc-700 dark:text-white"><span>Tổng thanh toán</span><span className="tabular-nums">{formatPrice(order.totalAmount)}</span></div>
                             {(canCancel || canPayNow || canSwitchToPayos) && (
                               <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-zinc-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -986,8 +984,8 @@ export const CustomerOrdersPage: React.FC = () => {
                                           if (checkoutUrl || qrCode) {
                                             setPayosModalData({
                                               orderId: oId,
-                                              orderNumber: oCode,
-                                              amount: oAmount,
+                                              orderNumber: String(data.orderCode || oCode),
+                                              amount: Number(data.amount || oAmount),
                                               qrCode,
                                               checkoutUrl,
                                               paymentLinkId,
@@ -1034,8 +1032,8 @@ export const CustomerOrdersPage: React.FC = () => {
                                             if (checkoutUrl || qrCode) {
                                               setPayosModalData({
                                                 orderId: oId,
-                                                orderNumber: oCode,
-                                                amount: oAmount,
+                                                orderNumber: String(data.orderCode || oCode),
+                                                amount: Number(data.amount || oAmount),
                                                 qrCode,
                                                 checkoutUrl,
                                                 paymentLinkId,
@@ -1479,6 +1477,21 @@ export const CustomerOrdersPage: React.FC = () => {
           paymentLinkId={payosModalData.paymentLinkId}
           onClose={() => setPayosModalData(null)}
           onSuccess={() => {
+            const paidOrderId = payosModalData.orderId;
+            setOrders((current) =>
+              current.map((ord) => {
+                const oId = String(ord.id || (ord as any).orderId);
+                return oId === String(paidOrderId)
+                  ? {
+                      ...ord,
+                      paymentStatus: 'PAID',
+                      status: ord.status === 'PENDING' ? 'CONFIRMED' : ord.status,
+                      orderStatus: ord.orderStatus === 'PENDING' ? 'CONFIRMED' : ord.orderStatus,
+                    }
+                  : ord;
+              })
+            );
+            toast.success('Thanh toán PayOS thành công!');
             loadOrders();
           }}
           onCancelled={(cancelledId) => {

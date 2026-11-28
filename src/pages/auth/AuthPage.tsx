@@ -10,6 +10,7 @@ import { resolvePostLoginRedirect } from '../../utils/authority';
 import { useFooterMotion } from '../../components/common/useFooterMotion';
 import { toast } from '../../context/ToastContext';
 import { api } from '../../services/api';
+import { ForgotPasswordCard } from './ForgotPasswordPage';
 import {
   Store,
   User,
@@ -92,6 +93,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
   // LOGIN FORM STATES & LOGIC
   // ==========================================
   const [identifier, setIdentifier] = useState(locationState?.email || 'store@smartorder.local');
+  const [showForgotModal, setShowForgotModal] = useState(false);
   const [loginPassword, setLoginPassword] = useState(locationState?.email ? '' : 'Password123!');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -829,12 +831,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                           />
                           <span>Ghi nhớ đăng nhập</span>
                         </label>
-                        <Link
-                          to="/forgot-password"
-                          className="text-xs text-[#0284c7] hover:text-[#0369a1] font-medium transition-colors"
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotModal(true)}
+                          className="text-xs text-[#0284c7] hover:text-[#0369a1] font-medium transition-colors cursor-pointer"
                         >
                           Quên mật khẩu?
-                        </Link>
+                        </button>
                       </div>
 
                       {/* Primary CTA Button: Gradient Đăng nhập ➔ */}
@@ -1480,6 +1483,34 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
           <Link to="/policies/terms" className="inline-flex min-h-11 items-center transition-colors hover:text-sky-100 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Điều khoản</Link>
         </div>
       </footer>
+
+      {/* Modal Quên Mật Khẩu (khi ấn Quên mật khẩu?) */}
+      <AnimatePresence>
+        {showForgotModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto"
+            onClick={() => setShowForgotModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 18 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md my-auto"
+            >
+              <ForgotPasswordCard
+                onClose={() => setShowForgotModal(false)}
+                initialEmail={identifier.includes('@') ? identifier : ''}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -545,9 +545,35 @@ export const AdminRefundsWorkspace: React.FC = () => {
       setPayoutNote('');
       await loadData(true, true);
     } catch (err: any) {
+      const status = err?.response?.status;
       const msg = err?.response?.data?.message || 'Không thể khởi tạo lệnh chi tiền qua PayOS. Vui lòng kiểm tra lại.';
+      const targetId = activePayoutItem.obligationId;
+      if (status === 409 && /PENDING_RECONCILIATION|PROCESSING|đối soát|xử lý/i.test(msg)) {
+        setActivePayoutItem(null);
+        setPayoutNote('');
+        try {
+          const syncRes = await adminPaymentRefundsService.syncObligation(targetId);
+          const syncData = syncRes?.data ?? syncRes;
+          const syncedObl = syncData?.obligation ?? syncData;
+          const isSettled = syncData?.settled === true || ['REFUNDED', 'SETTLED'].includes(syncedObl?.status);
+          const infoMsg = isSettled
+            ? `Đã chi hoàn tiền và đối soát tất toán nghĩa vụ #${targetId} thành công.`
+            : `Nghĩa vụ #${targetId} đang chờ đối soát kết quả từ PayOS.`;
+          showRowNotice(targetId, { text: infoMsg, success: true }, 5000);
+          if (isSettled) toast.success(infoMsg, { duration: 5000 });
+          else toast.info(infoMsg, { duration: 5000 });
+          await loadData(true, true);
+          return;
+        } catch {
+          // Fall through to showing non-blocking info notice
+        }
+        showRowNotice(targetId, { text: msg, success: true }, 5000);
+        toast.info(msg, { duration: 5000 });
+        await loadData(true, true);
+        return;
+      }
       if (activePayoutItem) {
-        showRowNotice(activePayoutItem.obligationId, {
+        showRowNotice(targetId, {
           text: msg,
           success: false,
         }, 5000);
@@ -921,10 +947,10 @@ export const AdminRefundsWorkspace: React.FC = () => {
                     'PENDING_RECIPIENT_VERIFICATION',
                     'FAILED',
                   ].includes(item.status);
-                  const rowFailureReason = item.failureReason || item.payoutAttempts?.[0]?.failureReason;
+                  const isSettledRow = ['SETTLED', 'REFUNDED'].includes(item.status) || Boolean(item.settledAttemptId);
+                  const rowFailureReason = isSettledRow ? undefined : (item.failureReason || item.payoutAttempts?.[0]?.failureReason);
                   const isSyncing = syncingId === item.obligationId;
                   const rowNotice = rowNotices[item.obligationId];
-                  const isSettledRow = ['SETTLED', 'REFUNDED'].includes(item.status) || Boolean(item.settledAttemptId);
 
                   return (
                     <React.Fragment key={item.obligationId}>
@@ -973,7 +999,7 @@ export const AdminRefundsWorkspace: React.FC = () => {
                             {item.targetAccountName || (item.receipt?.sourceAccountMasked ? `Nguồn PayOS: ${item.receipt.sourceAccountMasked}` : 'Chưa ghi nhận tên')}
                           </div>
                           <div className="mt-0.5 text-zinc-500 dark:text-zinc-400 tabular-nums">
-                            {item.targetAccountMasked || (item.receipt?.sourceBankBin ? `BIN ${item.receipt.sourceBankBin}` : 'Chưa có STK')}
+                            {item.targetAccountMasked || item.receipt?.sourceAccountMasked || 'Chưa có STK'}
                           </div>
                           {!item.targetAccountName && (
                             <div className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
@@ -1379,7 +1405,10 @@ export const AdminRefundsWorkspace: React.FC = () => {
                         </td>
                         <td className="py-3 px-3">
                           <div className="font-semibold text-zinc-800 dark:text-zinc-200">{item.rentalCode || `#${item.rentalId}`}</div>
-                          <div className="text-[11px] text-zinc-500">{item.customerName} {item.customerPhone ? `· ${item.customerPhone}` : ''}</div>
+                          <div className="text-[11px] text-zinc-500">{item.customerName}</div>
+                          {item.customerPhone && (
+                            <div className="text-[11px] text-zinc-500 tabular-nums">SĐT: {item.customerPhone}</div>
+                          )}
                         </td>
                         <td className="py-3 px-3 text-zinc-600 dark:text-zinc-300">{item.sourceLabel}</td>
                         <td className="py-3 px-3 font-bold text-[#0E6BA8] dark:text-sky-400">{adminMoney(item.amount)}</td>
@@ -1481,12 +1510,6 @@ export const AdminRefundsWorkspace: React.FC = () => {
                     {activePayoutItem.targetAccountMasked || (activePayoutItem.receipt?.sourceAccountMasked ? `Nguồn PayOS: ${activePayoutItem.receipt.sourceAccountMasked}` : 'Tự động liên kết khi chi')}
                   </span>
                 </p>
-                {(activePayoutItem.targetBankBin || activePayoutItem.receipt?.sourceBankBin) && (
-                  <p>
-                    <strong className="text-zinc-700 dark:text-zinc-300">Mã BIN ngân hàng:</strong>{' '}
-                    <span>{activePayoutItem.targetBankBin || activePayoutItem.receipt?.sourceBankBin}</span>
-                  </p>
-                )}
                 {activePayoutItem.status === 'PENDING_RECIPIENT_VERIFICATION' && (
                   <div className="mt-2 p-2.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900 text-sky-900 dark:text-sky-200 text-[11px] space-y-1">
                     <p className="font-semibold flex items-center gap-1 text-sky-800 dark:text-sky-300">
@@ -1606,20 +1629,24 @@ export const AdminRefundsWorkspace: React.FC = () => {
                   <span className="text-zinc-500">Khách hàng đặt:</span>
                   <p className="font-semibold text-zinc-900 dark:text-white mt-0.5">
                     {detailOrder?.customer?.fullName || 'Chưa ghi nhận'}
-                    {detailOrder?.customer?.phone || detailOrder?.customer?.phoneNumber ? (
-                      <span className="font-normal text-zinc-500 ml-1">
-                        ({detailOrder.customer.phone || detailOrder.customer.phoneNumber})
-                      </span>
-                    ) : null}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Số điện thoại khách:</span>
+                  <p className="font-medium text-zinc-900 dark:text-white mt-0.5 tabular-nums">
+                    {detailOrder?.customer?.phone || detailOrder?.customer?.phoneNumber || '—'}
                   </p>
                 </div>
                 <div>
                   <span className="text-zinc-500">Người nhận hàng:</span>
                   <p className="font-medium text-zinc-900 dark:text-white mt-0.5">
                     {detailOrder?.shippingRecipientName || '—'}
-                    {detailOrder?.shippingPhone ? (
-                      <span className="text-zinc-500 ml-1">({detailOrder.shippingPhone})</span>
-                    ) : null}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-zinc-500">Số điện thoại nhận:</span>
+                  <p className="font-medium text-zinc-900 dark:text-white mt-0.5 tabular-nums">
+                    {detailOrder?.shippingPhone || '—'}
                   </p>
                 </div>
                 {detailOrder?.store?.name && (
@@ -1692,7 +1719,6 @@ export const AdminRefundsWorkspace: React.FC = () => {
                     <span className="text-zinc-500">Tài khoản nguồn khách chuyển:</span>
                     <p className="font-mono font-medium text-zinc-800 dark:text-zinc-200 mt-0.5">
                       {activeDetailItem.receipt.sourceAccountMasked || '—'}
-                      {activeDetailItem.receipt.sourceBankBin ? ` (BIN ${activeDetailItem.receipt.sourceBankBin})` : ''}
                     </p>
                   </div>
                   <div>
@@ -1788,7 +1814,7 @@ export const AdminRefundsWorkspace: React.FC = () => {
                         <div>
                           <span className="text-zinc-400 text-[11px]">Số tài khoản / Ngân hàng:</span>
                           <p className="font-mono font-medium text-zinc-900 dark:text-white">
-                            {activeDetailItem.targetAccountMasked} (BIN: {activeDetailItem.targetBankBin})
+                            {activeDetailItem.targetAccountMasked}
                           </p>
                         </div>
                       </div>

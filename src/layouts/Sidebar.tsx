@@ -152,7 +152,7 @@ export const Sidebar: React.FC = () => {
     }}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-semibold text-zinc-800 dark:text-zinc-100 [&::-webkit-details-marker]:hidden">
         <Menu size={20} className="shrink-0" />
-        <span className="min-w-0 break-words">{isAdmin && location.pathname === '/admin/refunds' ? 'Hoàn tiền PayOS' : isAdmin && location.pathname === '/admin/payouts' ? 'Chi trả ví cửa hàng' : isAdmin && location.pathname === '/admin/dashboard' && ['PLANS', 'RENTALS'].includes(new URLSearchParams(location.search).get('section') || '') ? 'Gói nút bấm' : !isCustomer && !isAdmin && ['/store/finance', '/store/service-plans'].includes(location.pathname) ? 'Gói & ngân hàng' : links.find((item) => isLinkActive(item.to))?.label || 'Menu điều hướng'}</span>
+        <span className="min-w-0 break-words">{isAdmin && location.pathname === '/admin/refunds' ? 'Hoàn tiền PayOS' : isAdmin && location.pathname === '/admin/dashboard' && ['PLANS', 'RENTALS'].includes(new URLSearchParams(location.search).get('section') || '') ? 'Gói nút bấm' : !isCustomer && !isAdmin && ['/store/finance', '/store/service-plans'].includes(location.pathname) ? 'Gói & ngân hàng' : links.find((item) => isLinkActive(item.to))?.label || 'Menu điều hướng'}</span>
         <span className="ml-auto shrink-0 text-xs text-zinc-500">Menu</span>
       </summary>
       <nav aria-label="Điều hướng trên điện thoại" className="grid gap-1 px-3 pb-3 sm:grid-cols-2">

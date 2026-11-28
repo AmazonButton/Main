@@ -3,7 +3,7 @@ import { useProductDiscounts } from '../hooks/useProductDiscounts';
 import { DiscountPrice } from '../components/products/DiscountPrice';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, MotionConfig, useReducedMotion } from 'framer-motion';
-import { Play, Pause, Volume2, VolumeX, ArrowRight, ShieldCheck, Zap, Battery, CheckCircle2, ShoppingCart, Search, Droplets, Star, Shield, Check, Sparkles, MousePointerClick, SearchX, Cog, Truck, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, ArrowRight, ShieldCheck, Zap, Battery, CheckCircle2, ShoppingCart, Search, Droplets, Star, Shield, Check, Sparkles, MousePointerClick, SearchX, Cog, Truck, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react';
 import './landing-ui.css';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -186,7 +186,9 @@ export const LandingPage: React.FC = () => {
   const [addedProductId, setAddedProductId] = useState<string | null>(null);
   const cachedCatalog = getInitialStorefrontCatalog();
   const [storefrontProducts, setStorefrontProducts] = useState<any[]>(cachedCatalog);
-  const { discounts, now: discountNow } = useProductDiscounts(storefrontProducts.slice(0, 8).map(product => String(product.id)));
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  const visibleStorefrontProducts = showAllProducts ? storefrontProducts : storefrontProducts.slice(0, 8);
+  const { discounts, now: discountNow } = useProductDiscounts(visibleStorefrontProducts.map(product => String(product.id)));
   const [productsLoading, setProductsLoading] = useState(cachedCatalog.length === 0);
   const [cartCount, setCartCount] = useState(0);
   const [cartPulse, setCartPulse] = useState(false);
@@ -618,7 +620,7 @@ export const LandingPage: React.FC = () => {
           </div>}
           {!productsLoading && storefrontProducts.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-zinc-700 dark:bg-zinc-900">Hiện chưa có sản phẩm đang bán. Vui lòng thêm sản phẩm trong trang quản lý cửa hàng.</div>}
           {!productsLoading && storefrontProducts.length > 0 && <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {storefrontProducts.slice(0, 8).map((product) => {
+            {visibleStorefrontProducts.map((product) => {
               const isSelected = addedProductId === product.id;
               const stock = Math.max(0, Number(product.stock || 0) - Number(product.reservedStock || 0));
 
@@ -691,6 +693,27 @@ export const LandingPage: React.FC = () => {
               );
             })}
           </div>}
+          {!productsLoading && storefrontProducts.length > 8 && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowAllProducts((prev) => !prev)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-[#287DA8] shadow-xs transition hover:border-[#287DA8]/40 hover:bg-[#EAF4F9]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#287DA8] dark:border-zinc-700 dark:bg-zinc-900 dark:text-sky-400 dark:hover:bg-zinc-800 cursor-pointer"
+              >
+                {showAllProducts ? (
+                  <>
+                    <span>Thu gọn danh sách</span>
+                    <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Xem thêm {storefrontProducts.length - 8} sản phẩm từ tất cả cửa hàng</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
         </div>
       </section>

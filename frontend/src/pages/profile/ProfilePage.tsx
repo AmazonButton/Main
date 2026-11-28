@@ -2150,6 +2150,12 @@ export const ProfilePage: React.FC = () => {
                     </button>
                   </div>
 
+                  {newPassword.length > 0 && currentPassword.length > 0 && currentPassword === newPassword && (
+                    <p className="mt-1.5 text-[11px] text-rose-500 flex items-center gap-1">
+                      <X className="w-3 h-3 shrink-0" />
+                      Mật khẩu mới không được trùng với mật khẩu hiện tại.
+                    </p>
+                  )}
                   {/* Password Strength Checklist */}
                   {newPassword.length > 0 && (
                     <div className="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/60 text-[11px] space-y-1.5">

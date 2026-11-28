@@ -430,7 +430,7 @@ api.interceptors.response.use(
       if (currentBase.includes('/api/v1')) { originalRequest.baseURL = currentBase.replace('/api/v1','/api'); return axios(originalRequest); }
       if (currentBase.endsWith('/api')) { originalRequest.baseURL = currentBase.replace(/\/api$/, '/api/v1'); return axios(originalRequest); }
     }
-    if (error.response?.status !== 401 || originalRequest._retry || isAuthEndpoint) return Promise.reject(error);
+    if (error.response?.status !== 401 || originalRequest._retry || isAuthEndpoint || error.response?.data?.code === 'INCORRECT_CURRENT_PASSWORD') return Promise.reject(error);
     if (originalRequest._sessionMarker != null && originalRequest._sessionMarker !== apiSessionMarker()) return Promise.reject(new axios.CanceledError('Tài khoản đã thay đổi.'));
     originalRequest._retry = true;
     const sentToken = originalRequest.headers?.get?.('Authorization') || originalRequest.headers?.Authorization;
